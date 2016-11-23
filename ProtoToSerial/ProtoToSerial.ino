@@ -1,4 +1,4 @@
-/*  Script reads data from Prototype device and outputs to serial
+/*  Script reads data from Prototype device and outputs to serial in JSON Format
  *  Sensors include Omron, Sharp IR sensor, and FSRs.
  *  Multiplexer setup is used to access the OMRON
  *  This script reads the data from a 8x1 OMRON D6T-8L sensor using only the Wire library. 
@@ -7,14 +7,14 @@
  
  *  
  *  Pin Assignments
- *  c0 Potentiometer on mux
+ *  
  *  c1 Omron 8x1 on mux
  *  c2 omron 4x4 on mux
  *  A0, A1, A2 FSRs
  *  
- *  Other Info
+ *  Reminder on Multiplexing:
  *  Multiplexer tutorial - http://bildr.org/2011/02/cd74hc4067-arduino/
- *  Multiplex the SDA signals and receive them on pin 0.
+ *  Multiplex the SDA signals to respect cx pins. Read mux pin 0 with Arduino.
  *  All i2c component SCL lines connect to regular Arduino SCL line. 
  *  Note Arduino Uno i2c pin arrangements. A4 (SDA), A5 (SCL)
  *  Adding in the FSRs.
@@ -53,6 +53,9 @@ int SIG_pin = 0;
 int fsr1 = 0;
 int fsr2 = 1;
 int fsr3 = 2;
+int fsr4 = 3;
+int fsr5 = 4;
+int fsr6 = 5;
 
 void setup()
 {
@@ -82,11 +85,12 @@ void loop()
   int i = 0;
   
 
+  // Read frorm the IR Sensors
   
   // Read from the potentiometer
-  readMux(0); // change addressing
-  int potentiometer = analogRead(A4);
-  root["pot"] = potentiometer; // Write to json object
+//  readMux(0); // change addressing
+//  int potentiometer = analogRead(A4);
+//  root["pot"] = potentiometer; // Write to json object
 //  Serial.print("Potentiometer value is ");
 //  Serial.print(potentiometer);
 //  Serial.print("\n");
@@ -176,6 +180,9 @@ void loop()
 //  Serial.print(analogRead(fsr3));
 //  Serial.print("\n");
   root["fsr3"] = analogRead(fsr3);
+  root["fsr4"] = analogRead(fsr4);
+  root["fsr5"] = analogRead(fsr5);
+  root["fsr6"] = analogRead(fsr6);
 
 //  Serial.print("\n");
 
@@ -225,6 +232,7 @@ int readMux(int channel){
 //  return val;
 }
 
+// Tried to improve our formatting and read the Omron as a function. It didn't like this because I was trying to write JSON array one element at a time. This isn't a priority right now.
 //int ReadOmron8(){
 //// Step one - send commands to the sensor
 //  Wire.beginTransmission(D6T_addr);
