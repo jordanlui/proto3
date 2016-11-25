@@ -59,8 +59,8 @@ float t_PTAT;
 //#define Gyro_addr 0x6B
 
 // Sharp Sensor setup
-#define ProxL A1
-#define ProxS A0
+#define ProxL 4 // The long range IR sensor, 10-80 cm. Address on the mus that we will read.
+#define ProxS 3 // The short range IR sensor, 2-15 cm. Address on the mus that we will read.
 
 // Multiplexer setup
 //Mux control pins
@@ -118,7 +118,7 @@ void loop()
 {
 
   // Initialize JSON buffer
-  StaticJsonBuffer<300> jsonBuffer; // buffer size 300
+  StaticJsonBuffer<350> jsonBuffer; // buffer size 300
   // Create our JSON object
   JsonObject& root = jsonBuffer.createObject();
   int i = 0;
@@ -130,22 +130,20 @@ void loop()
 
   // Adafruit IMU Read
   lsm.read();
-  Serial.print("Accel X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
-  Serial.print("Y: "); Serial.print((int)lsm.accelData.y);       Serial.print(" ");
-  Serial.print("Z: "); Serial.println((int)lsm.accelData.z);     Serial.print(" ");
-  //  Serial.print("Mag X: "); Serial.print((int)lsm.magData.x);     Serial.print(" ");
-  //  Serial.print("Y: "); Serial.print((int)lsm.magData.y);         Serial.print(" ");
-  //  Serial.print("Z: "); Serial.println((int)lsm.magData.z);       Serial.print(" ");
-  Serial.print("Gyro X: "); Serial.print((int)lsm.gyroData.x);   Serial.print(" ");
-  Serial.print("Y: "); Serial.print((int)lsm.gyroData.y);        Serial.print(" ");
-  Serial.print("Z: "); Serial.println((int)lsm.gyroData.z);      Serial.println(" ");
-  // root["pot"] = potentiometer; // Write to json object
+  // Save IMU Data to JSON String
   root["gyro1"] = (int)lsm.gyroData.x;
   root["gyro2"] = (int)lsm.gyroData.y;
   root["gyro3"] = (int)lsm.gyroData.z;
-  // Serial.print("Potentiometer value is ");
-  // Serial.print(potentiometer);
-  // Serial.print("\n");
+  //  Serial.print("Accel X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
+  //  Serial.print("Y: "); Serial.print((int)lsm.accelData.y);       Serial.print(" ");
+  //  Serial.print("Z: "); Serial.println((int)lsm.accelData.z);     Serial.print(" ");
+  //  Serial.print("Mag X: "); Serial.print((int)lsm.magData.x);     Serial.print(" ");
+  //  Serial.print("Y: "); Serial.print((int)lsm.magData.y);         Serial.print(" ");
+  //  Serial.print("Z: "); Serial.println((int)lsm.magData.z);       Serial.print(" ");
+  //  Serial.print("Gyro X: "); Serial.print((int)lsm.gyroData.x);   Serial.print(" ");
+  //  Serial.print("Y: "); Serial.print((int)lsm.gyroData.y);        Serial.print(" ");
+  //  Serial.print("Z: "); Serial.println((int)lsm.gyroData.z);      Serial.println(" ");
+
 
   // Reading from Omron 8x1, address c1 on mux
   readMux(1); // change the addressing
@@ -205,9 +203,13 @@ void loop()
     }
   }
   // Serial.print("\n");
-  //Read from IR sensor connected to A0
-  root["SharpL"] = analogRead(ProxL);
-  root["SharpS"] = analogRead(ProxS);
+  //Read from IR sensors
+  readMux(ProxL);
+  delay(20);
+  root["SharpL"] = analogRead(A4);
+  readMux(ProxS);
+  delay(20);
+  root["SharpS"] = analogRead(A4);
 
   // Read FSRs
   root["fsr1"] = analogRead(fsr1);
