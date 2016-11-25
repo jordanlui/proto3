@@ -10,7 +10,8 @@
 
   c1 Omron 8x1 on mux
   c2 omron 4x4 on mux
-  A0, A1, A2 FSRs
+  c3,c4 for Sharp IR Sensors
+  FSRs on analog pins
 
   Reminder on Multiplexing:
   Multiplexer tutorial - http://bildr.org/2011/02/cd74hc4067-arduino/
@@ -70,6 +71,7 @@ int s2 = 10;
 int s3 = 11;
 //Mux in "SIG" pin. The pin we actually receive and send signal to
 int SIG_pin = 0;
+int muxdelay = 10; // Delay time that we insert after mux pin changes
 
 // Pin setups
 int fsr1 = 0;
@@ -88,14 +90,14 @@ void setup()
   while (!Serial);     // will pause Zero, Leonardo, etc until serial console opens
 #endif
   Serial.begin(9600);
-  Serial.println("LSM raw read demo");
+//  Serial.println("LSM raw read demo");
   // Try to initialise and warn if we couldn't detect the chip
   if (!lsm.begin())
   {
     Serial.println("Oops ... unable to initialize the LSM9DS0. Check your wiring!");
     while (1);
   }
-  Serial.println("Found LSM9DS0 9DOF");
+  Serial.println("LSM9DS0 9DOF IMU Detected.");
   Serial.println("");
 
   // Multiplex setup
@@ -126,7 +128,7 @@ void loop()
 
   // Read from the IMU
   //  readMux(0); // change addressing to IMU address
-  delay(20);
+//  delay(20);
 
   // Adafruit IMU Read
   lsm.read();
@@ -147,14 +149,14 @@ void loop()
 
   // Reading from Omron 8x1, address c1 on mux
   readMux(1); // change the addressing
-  delay(20);
+//  delay(20);
   // SDA pin on Arduino should now be routed through MUX to the SDA on OMRON.
   // int AckOmron8 = ReadOmron8(); // Returns true if it completes properly
   // Step one - send commands to the sensor
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
   Wire.endTransmission();
-  delay(50); // Delay between instruction and data acquisition
+  delay(30); // Delay between instruction and data acquisition
   // Request data from the sensor
   Wire.requestFrom(D6T_addr, numbytes); // D6T-8 returns 19 bytes
   // Receive the data
@@ -178,11 +180,11 @@ void loop()
   // Read from Omron 4x4
   readMux(2);
   // SDA pin on Arduino should now route to SDA for OMRON 4x4
-  delay(20);
+//  delay(20);
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
   Wire.endTransmission();
-  delay(50);
+  delay(30);
   if (WireExt.beginReception(D6T_addr) >= 0) {
     i = 0;
     // Receive all our bytes of data
@@ -205,10 +207,10 @@ void loop()
   // Serial.print("\n");
   //Read from IR sensors
   readMux(ProxL);
-  delay(20);
+//  delay(20);
   root["SharpL"] = analogRead(A4);
   readMux(ProxS);
-  delay(20);
+//  delay(20);
   root["SharpS"] = analogRead(A4);
 
   // Read FSRs
@@ -262,15 +264,11 @@ int readMux(int channel) {
     {1, 1, 1, 1} //channel 15
   };
 
-  //loop through the 4 sig
+  //Write these changes to the mux channel addresses
   for (int i = 0; i < 4; i ++) {
 
     digitalWrite(controlPin[i], muxChannel[channel][i]);
   }
 
-  //read the value at the SIG pin
-  // int val = analogRead(SIG_pin);
-
-  //return the value
-  // return val;
+  delay(muxdelay);
 }
