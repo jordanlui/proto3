@@ -60,8 +60,8 @@ float t_PTAT;
 //#define Gyro_addr 0x6B
 
 // Sharp Sensor setup
-#define ProxL 4 // The long range IR sensor, 10-80 cm. Address on the mus that we will read.
-#define ProxS 3 // The short range IR sensor, 2-15 cm. Address on the mus that we will read.
+#define ProxL A1 // The long range IR sensor, 10-80 cm. Analog addres
+#define ProxS A0 // The short range IR sensor, 2-15 cm. Analog address 
 
 // Multiplexer setup
 //Mux control pins
@@ -206,12 +206,12 @@ void loop()
   }
   // Serial.print("\n");
   //Read from IR sensors
-  readMux(ProxL);
+  
 //  delay(20);
-  root["SharpL"] = analogRead(A4);
-  readMux(ProxS);
+  root["SharpL"] = analogRead(ProxL);
+  
 //  delay(20);
-  root["SharpS"] = analogRead(A4);
+  root["SharpS"] = analogRead(ProxS);
 
   // Read FSRs
   root["fsr1"] = analogRead(fsr1);
