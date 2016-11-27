@@ -10,8 +10,8 @@
 
   c1 Omron 8x1 on mux
   c2 omron 4x4 on mux
-  c3,c4 for Sharp IR Sensors
-  FSRs on analog pins
+  A0, A1 for Sharp IR Sensors
+  A2, A3, for FSRs
 
   Reminder on Multiplexing:
   Multiplexer tutorial - http://bildr.org/2011/02/cd74hc4067-arduino/
@@ -51,17 +51,13 @@ void setupSensor()
 int numbytes = 19;
 int numel = 8;
 int rbuf[19]; // Actual raw data is coming in as 35 bytes for OMRON 4x4, and 19 bytes for Omron 8x1.
-int tdata[8]; // The data comming from the sensor is in 8 elements
-int rbuf2[35]; // Actual raw data is coming in as 35 bytes for OMRON 4x4,
-int tdata2[16]; // The data comming from the sensor is in 16 elements
+int tdata[8]; // The data comming from omron8 is in 8 elements
+int rbuf2[35]; // Actual raw data is coming in as 35 bytes for OMRON 4x4
+int tdata2[16]; // The data comming from the omron4x4 is in 16 elements
 float t_PTAT;
 
 // Think this code is from the old IMU. TO BE DELETED
 //#define Gyro_addr 0x6B
-
-// Sharp Sensor setup
-#define ProxL A1 // The long range IR sensor, 10-80 cm. Analog addres
-#define ProxS A0 // The short range IR sensor, 2-15 cm. Analog address 
 
 // Multiplexer setup
 //Mux control pins
@@ -71,26 +67,43 @@ int s2 = 10;
 int s3 = 11;
 //Mux in "SIG" pin. The pin we actually receive and send signal to
 int SIG_pin = 0;
-int muxdelay = 10; // Delay time that we insert after mux pin changes
+int muxdelay = 10; // Delay time in ms that we insert after mux pin changes
 
 // Pin setups
-int fsr1 = 0;
-int fsr2 = 1;
-int fsr3 = 2;
-int fsr4 = 3;
-int fsr5 = 4;
-int fsr6 = 5;
+// FSR pins read together since we need to conserve analog pins
+int fsr1 = 2; // nominal elbow extension
+int fsr2 = 2; // nominal elbow flexion
+int fsr3 = 2; // affected elbow extension
+int fsr4 = 3; // affected elbow flexion
+int fsr5 = 3; // finger fsr for measurinig upward elbow flexion, supination
+int fsr6 = 3; // fsr that we might not use
+
+// Digital pins are used to selectively power the FSRs, effectively multiplexing our system
+int dfsr1 = 7; // nominal elbow extension
+int dfsr2 = 8; // nominal elbow flexion
+int dfsr3 = 9; // affected elbow extension
+int dfsr4 = 7; // affected elbow flexion
+int dfsr5 = 8; // finger fsr for measurinig upward elbow flexion, supination
+int dfsr6 = 9; // fsr that we might not use
+
+// Omron mux pins
+int omron8 = 1; // mux address
+int omron4 = 2; // mux address
+
+// Sharp Sensor setup
+int ProxL = 1; // The long range IR sensor, 10-80 cm. Analog addres
+int ProxS = 0; // The short range IR sensor, 2-15 cm. Analog address
 
 void setup()
 {
 
   // Adafruit IMU Setup
-  //readMux(0); // change addressing to IMU address
+  // We read IMU right from the i2c main line - no mux required.
 #ifndef ESP8266
   while (!Serial);     // will pause Zero, Leonardo, etc until serial console opens
 #endif
   Serial.begin(9600);
-//  Serial.println("LSM raw read demo");
+  //  Serial.println("LSM raw read demo");
   // Try to initialise and warn if we couldn't detect the chip
   if (!lsm.begin())
   {
@@ -110,6 +123,13 @@ void setup()
   digitalWrite(s2, LOW);
   digitalWrite(s3, LOW);
 
+  // Digital pin setup for FSR power multiplexing
+  pinMode(dfsr1, OUTPUT);
+  digitalWrite(dfsr1, LOW);
+  pinMode(dfsr2, OUTPUT);
+  digitalWrite(dfsr2, LOW);
+  pinMode(dfsr3, OUTPUT);
+  digitalWrite(dfsr3, LOW);
 
   Wire.begin();
   //Serial.begin(9600);
@@ -125,33 +145,12 @@ void loop()
   JsonObject& root = jsonBuffer.createObject();
   int i = 0;
 
+  //Read from IR sensors
+  root["dist1"] = analogRead(ProxL);
+  root["dist2"] = analogRead(ProxS);
 
-  // Read from the IMU
-  //  readMux(0); // change addressing to IMU address
-//  delay(20);
-
-  // Adafruit IMU Read
-  lsm.read();
-  // Save IMU Data to JSON String
-  root["gyro1"] = (int)lsm.gyroData.x;
-  root["gyro2"] = (int)lsm.gyroData.y;
-  root["gyro3"] = (int)lsm.gyroData.z;
-  //  Serial.print("Accel X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
-  //  Serial.print("Y: "); Serial.print((int)lsm.accelData.y);       Serial.print(" ");
-  //  Serial.print("Z: "); Serial.println((int)lsm.accelData.z);     Serial.print(" ");
-  //  Serial.print("Mag X: "); Serial.print((int)lsm.magData.x);     Serial.print(" ");
-  //  Serial.print("Y: "); Serial.print((int)lsm.magData.y);         Serial.print(" ");
-  //  Serial.print("Z: "); Serial.println((int)lsm.magData.z);       Serial.print(" ");
-  //  Serial.print("Gyro X: "); Serial.print((int)lsm.gyroData.x);   Serial.print(" ");
-  //  Serial.print("Y: "); Serial.print((int)lsm.gyroData.y);        Serial.print(" ");
-  //  Serial.print("Z: "); Serial.println((int)lsm.gyroData.z);      Serial.println(" ");
-
-
-  // Reading from Omron 8x1, address c1 on mux
-  readMux(1); // change the addressing
-//  delay(20);
-  // SDA pin on Arduino should now be routed through MUX to the SDA on OMRON.
-  // int AckOmron8 = ReadOmron8(); // Returns true if it completes properly
+  // Reading from Omron 8x1 sensor
+  readMux(omron8); // change the addressing
   // Step one - send commands to the sensor
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
@@ -177,10 +176,8 @@ void loop()
     //    Serial.print("\n");
   }
 
-  // Read from Omron 4x4
-  readMux(2);
-  // SDA pin on Arduino should now route to SDA for OMRON 4x4
-//  delay(20);
+  // Read from Omron 4x4 sensor
+  readMux(omron4);
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
   Wire.endTransmission();
@@ -204,41 +201,61 @@ void loop()
       data2.add(tdata[i]);
     }
   }
-  // Serial.print("\n");
-  //Read from IR sensors
-  
-//  delay(20);
-  root["SharpL"] = analogRead(ProxL);
-  
-//  delay(20);
-  root["SharpS"] = analogRead(ProxS);
+
+
 
   // Read FSRs
-  root["fsr1"] = analogRead(fsr1);
-  root["fsr2"] = analogRead(fsr2);
-  root["fsr3"] = analogRead(fsr3);
-  root["fsr4"] = analogRead(fsr4);
-  root["fsr5"] = analogRead(fsr5);
-  root["fsr6"] = analogRead(fsr6);
+  root["fsr1"] = readFSR(fsr1, dfsr1);
+  root["fsr2"] = readFSR(fsr2, dfsr2);
+  root["fsr3"] = readFSR(fsr3, dfsr3);
+  root["fsr4"] = readFSR(fsr4, dfsr4);
+  root["fsr5"] = readFSR(fsr5, dfsr5);
+  root["fsr6"] = readFSR(fsr6, dfsr6);
 
-  // Print FSR Values
-  // Serial.print(analogRead(fsr1));
-  // Serial.print(analogRead(fsr2));
-
-  // Serial.print("\n");
+  // Adafruit IMU Read
+  lsm.read();
+  // Save IMU Data to JSON String
+  root["orientation1"] = (int)lsm.gyroData.x;
+  root["orientation2"] = (int)lsm.gyroData.y;
+  root["orientation3"] = (int)lsm.gyroData.z;
+  // Print out the IMU data (for debug)
+  //  Serial.print("Accel X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
+  //  Serial.print("Y: "); Serial.print((int)lsm.accelData.y);       Serial.print(" ");
+  //  Serial.print("Z: "); Serial.println((int)lsm.accelData.z);     Serial.print(" ");
+  //  Serial.print("Mag X: "); Serial.print((int)lsm.magData.x);     Serial.print(" ");
+  //  Serial.print("Y: "); Serial.print((int)lsm.magData.y);         Serial.print(" ");
+  //  Serial.print("Z: "); Serial.println((int)lsm.magData.z);       Serial.print(" ");
+  //  Serial.print("Gyro X: "); Serial.print((int)lsm.gyroData.x);   Serial.print(" ");
+  //  Serial.print("Y: "); Serial.print((int)lsm.gyroData.y);        Serial.print(" ");
+  //  Serial.print("Z: "); Serial.println((int)lsm.gyroData.z);      Serial.println(" ");
 
   // Print our output objects
-  // Serial.print("Look at our JSON\n");
-  // root.prettyPrintTo(Serial);
+  // root.prettyPrintTo(Serial); // pretty print is an option
   root.printTo(Serial);
   Serial.println();
 
-  delay(200);
+  delay(200); // Main loop delay
 }
 
 ////////
 // Other functions
 ///////
+
+int readFSR(int pin, int dpin) {
+  // Read the FSRs at the specified analog pin. Note a digital pin must be specified to power the FSR for the sampling period.
+  int result;
+
+  // Turn on voltage to the select FSR
+  digitalWrite(dpin, HIGH);
+
+  // Read from the analog pin
+  result = analogRead(pin);
+  digitalWrite(dpin, LOW);
+
+
+  return result;
+
+}
 
 int readMux(int channel) {
   // Changes the addressing of the MUX.
