@@ -91,8 +91,8 @@ int omron8 = 1; // mux address
 int omron4 = 2; // mux address
 
 // Sharp Sensor setup
-int ProxL = 1; // The long range IR sensor, 10-80 cm. Analog addres
-int ProxS = 0; // The short range IR sensor, 2-15 cm. Analog address
+int ProxL = 0; // The long range IR sensor, 10-80 cm. Analog addres
+int ProxS = 1; // The short range IR sensor, 2-15 cm. Analog address
 
 void setup()
 {
@@ -155,7 +155,7 @@ void loop()
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
   Wire.endTransmission();
-  delay(30); // Delay between instruction and data acquisition
+  delay(20); // Delay between instruction and data acquisition
   // Request data from the sensor
   Wire.requestFrom(D6T_addr, numbytes); // D6T-8 returns 19 bytes
   // Receive the data
@@ -181,7 +181,7 @@ void loop()
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
   Wire.endTransmission();
-  delay(30);
+  delay(20);
   if (WireExt.beginReception(D6T_addr) >= 0) {
     i = 0;
     // Receive all our bytes of data
@@ -234,7 +234,7 @@ void loop()
   root.printTo(Serial);
   Serial.println();
 
-  delay(200); // Main loop delay
+  delay(10); // Main loop delay
 }
 
 ////////
