@@ -70,12 +70,13 @@ int SIG_pin = 0;
 int muxdelay = 10; // Delay time in ms that we insert after mux pin changes
 
 // Pin setups
+// Aryan
 // FSR pins read together since we need to conserve analog pins
-int fsr1 = 2; // nominal elbow extension
-int fsr2 = 2; // nominal elbow flexion
-int fsr3 = 2; // affected elbow extension
-int fsr4 = 3; // affected elbow flexion
-int fsr5 = 3; // finger fsr for measurinig upward elbow flexion, supination
+int fsr1 = 2; // nominal elbow extension (1)
+int fsr2 = 3; // nominal elbow flexion (2)
+int fsr3 = 2; // affected elbow extension (3)
+int fsr4 = 3; // affected elbow flexion (4)
+int fsr5 = 2; // finger fsr for measurinig upward elbow flexion, supination
 int fsr6 = 3; // fsr that we might not use
 
 // Digital pins are used to selectively power the FSRs, effectively multiplexing our system
@@ -124,6 +125,7 @@ void setup()
   digitalWrite(s3, LOW);
 
   // Digital pin setup for FSR power multiplexing
+  // Aryan
   pinMode(dfsr1, OUTPUT);
   digitalWrite(dfsr1, LOW);
   pinMode(dfsr2, OUTPUT);
@@ -205,6 +207,7 @@ void loop()
 
 
   // Read FSRs
+  // Aryan - probably no changes here
   root["fsr1"] = readFSR(fsr1, dfsr1);
   root["fsr2"] = readFSR(fsr2, dfsr2);
   root["fsr3"] = readFSR(fsr3, dfsr3);
