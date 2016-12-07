@@ -26,7 +26,8 @@
 #include <Wire.h>
 #include <WireExt.h>
 #include <elapsedMillis.h>
-#include <ArduinoJson.h>
+#include <ArduinoJson.h>]
+
 #include <SPI.h>
 
 // IMU Setup
@@ -74,9 +75,9 @@ int muxdelay = 10; // Delay time in ms that we insert after mux pin changes
 // FSR pins read together since we need to conserve analog pins
 int fsr1 = 2; // nominal elbow extension (1)
 int fsr2 = 3; // nominal elbow flexion (2)
-int fsr3 = 2; // affected elbow extension (3)
-int fsr4 = 3; // affected elbow flexion (4)
-int fsr5 = 4; // finger fsr for measurinig upward elbow flexion, supination
+int fsr3 = 3; // affected elbow extension (3)
+int fsr4 = 2; // affected elbow flexion (4)
+int fsr5 = 3; // finger fsr for measurinig upward elbow flexion, supination
 int fsr6 = 4; // fsr that we might not use
 
 // Digital pins are used to selectively power the FSRs, effectively multiplexing our system
