@@ -76,16 +76,18 @@ int fsr1 = 2; // nominal elbow extension (1)
 int fsr2 = 3; // nominal elbow flexion (2)
 int fsr3 = 2; // affected elbow extension (3)
 int fsr4 = 3; // affected elbow flexion (4)
-int fsr5 = 2; // finger fsr for measurinig upward elbow flexion, supination
-int fsr6 = 3; // fsr that we might not use
+int fsr5 = 4; // finger fsr for measurinig upward elbow flexion, supination
+int fsr6 = 4; // fsr that we might not use
 
 // Digital pins are used to selectively power the FSRs, effectively multiplexing our system
-int dfsr1 = 7; // nominal elbow extension
-int dfsr2 = 8; // nominal elbow flexion
-int dfsr3 = 9; // affected elbow extension
-int dfsr4 = 7; // affected elbow flexion
-int dfsr5 = 8; // finger fsr for measurinig upward elbow flexion, supination
-int dfsr6 = 9; // fsr that we might not use
+// using the same digital pins for the extensions and flexions as pairs
+// Digital pins 8-11 are used by the MUX
+int dfsr1 = 7; // nominal elbow extension (1)
+int dfsr2 = 6; // nominal elbow flexion (2)
+int dfsr3 = 7; // affected elbow extension (3)
+int dfsr4 = 6; // affected elbow flexion (4)
+int dfsr5 = 5; // finger fsr for measurinig upward elbow flexion, supination (5)
+int dfsr6 = 5; // fsr that we might not use
 
 // Omron mux pins
 int omron8 = 1; // mux address
@@ -126,12 +128,20 @@ void setup()
 
   // Digital pin setup for FSR power multiplexing
   // Aryan
-  pinMode(dfsr1, OUTPUT);
+  pinMode(dfsr1, OUTPUT); 	// nominal elbow extension (1)
   digitalWrite(dfsr1, LOW);
-  pinMode(dfsr2, OUTPUT);
+  pinMode(dfsr2, OUTPUT);	// nominal elbow flexion (2)
   digitalWrite(dfsr2, LOW);
-  pinMode(dfsr3, OUTPUT);
+  pinMode(dfsr3, OUTPUT);	// affected elbow extension (3)
   digitalWrite(dfsr3, LOW);
+  pinMode(dfsr4, OUTPUT);	// affected elbow flexion (4)
+  digitalWrite(dfsr4, LOW);
+
+  // finger fsr for measurinig upward elbow flexion, supination (5)
+  /*pinMode(dfsr4, OUTPUT);
+  digitalWrite(dfsr4, LOW);
+   
+   */
 
   Wire.begin();
   //Serial.begin(9600);
