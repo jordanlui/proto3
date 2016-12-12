@@ -18,17 +18,19 @@ import numpy as np
 #from sklearn import neighbors, datasets
 from sklearn import svm
 from sklearn import preprocessing
+from sklearn.metrics import confusion_matrix
 import glob, os
 import csv
 import random
 import re
 import sys
+from plot_confusion_matrix import plot_confusion_matrix
 
 # File paths for accessing data
 path ='../Data/dec6_1'
 output_path = '../Analysis/'
 output_file = 'dec6.csv'
-
+class_names = ['nominal flexion','affected flexion','upward']
 # Function parameters
 cvalue = 2e-3
 
@@ -143,33 +145,40 @@ numcorrect = np.sum(compare)
 accuracy = numcorrect / len(testdata) * 100 
 print 'overall accuracy is','{:04.2f}'.format(accuracy)
 
+# Confusion matrix
+plt.figure(1)
+conf = confusion_matrix(t_test,testdata)
+plot_confusion_matrix(conf,class_names)
+
 # Test Model Against each piece of testing data
 # WIP - needs more work 
-accuracy = []
-for file in file_test:
-    x1,t1 = xmatrix(file)
-    
-    # Temporary resizing of files. Remove
-#    x1 = np.delete(x1,[30,31],1)
-
-    testdata = lin_clf.predict(x1)
-    testdata = np.reshape(testdata,(len(testdata),1)) # reshape the data
-
-    # Compare to our test data
-    
-    compare = testdata==t1
-    numcorrect = np.sum(compare)
-    acc = numcorrect / len(testdata) * 100 
-print 'summarize accuracy'
-print accuracy
+#accuracy = []
+#for file in file_test:
+#    x1,t1 = xmatrix(file)
+#    
+#    # Temporary resizing of files. Remove
+##    x1 = np.delete(x1,[30,31],1)
+#
+#    testdata = lin_clf.predict(x1)
+#    testdata = np.reshape(testdata,(len(testdata),1)) # reshape the data
+#
+#    # Compare to our test data
+#    
+#    compare = testdata==t1
+#    numcorrect = np.sum(compare)
+#    acc = numcorrect / len(testdata) * 100 
+#print 'summarize accuracy'
+#print accuracy
 # Training Accuracy
 
 
 # Testing Accuracy
 
 # Data plots
-plt.figure(1)
-#plt.plot(x1[:,0:2],label='distance')
-plt.plot(x1[:,-9:-4],label='fsr')
+x1,t1 = xmatrix(file_test[-1])
+plt.figure(2)
+plt.plot(x1[:,0:2],label='distance')
+#plt.plot(x1[:,-9:-4],label='fsr') # FSR Data # Distance sensors
+plt.plot(x1[:,-3:],label='IMU') #IMU Data
 plt.legend()
 plt.show()
