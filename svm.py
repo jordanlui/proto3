@@ -27,9 +27,9 @@ import sys
 from plot_confusion_matrix import plot_confusion_matrix
 
 # File paths for accessing data
-path ='../Data/dec6_1'
+path ='../Data/dec13_1'
 output_path = '../Analysis/'
-output_file = 'dec6.csv'
+output_file = 'dec13.csv'
 class_names = ['nominal flexion','affected flexion','upward']
 # Function parameters
 cvalue = 2e-3
@@ -61,7 +61,7 @@ def xmatrix(files):
             data = data[1:,:]
             # Find the gesture number
             trial_info = re.findall('\[([0-9]{1,2})\]',file)
-            gesture = trial_info[1]
+            gesture = int(trial_info[1])
 
             for row in data:
                 x.append(row)
@@ -121,6 +121,13 @@ file_test = filelist[-int(segment * numfiles):]
 # Generate x_train and x_test matrices
 x_train,t_train = xmatrix(file_train)
 x_test,t_test = xmatrix(file_test)
+matrix_names = ['x_train','t_train','x_test','t_test']
+
+# Save these to file
+for i, matrix in enumerate([x_train,t_train,x_test,t_test]):
+    matrix = np.asarray(matrix)
+    np.savetxt(matrix_names[i]+'.csv',matrix,delimiter=',')
+# Save to a single file
 
 # Cut out two columns since we aren't using the FSR Data
 #x_train = np.delete(x_train,[30,31],1)
@@ -133,7 +140,7 @@ x_train,x_test = normtraintest(x_train,x_test)
 
 # Create SVM Model
 
-lin_clf = svm.LinearSVC(C=cvalue)
+lin_clf = svm.SVC(kernel='poly',degree=3)
 lin_clf.fit(x_train,t_train)
 
 # Overall Accuracy
@@ -148,7 +155,7 @@ print 'overall accuracy is','{:04.2f}'.format(accuracy)
 # Confusion matrix
 plt.figure(1)
 conf = confusion_matrix(t_test,testdata)
-plot_confusion_matrix(conf,class_names)
+plot_confusion_matrix(conf,classes=class_names,normalize=True)
 
 # Test Model Against each piece of testing data
 # WIP - needs more work 

@@ -78,7 +78,7 @@ int fsr2 = 3; // nominal elbow flexion (2)
 int fsr3 = 3; // affected elbow extension (3)
 int fsr4 = 2; // affected elbow flexion (4)
 int fsr5 = 3; // finger fsr for measurinig upward elbow flexion, supination
-int fsr6 = 4; // fsr that we might not use
+int fsr6 = 4; // fsr that we currently do not use
 
 // Digital pins are used to selectively power the FSRs, effectively multiplexing our system
 // using the same digital pins for the extensions and flexions as pairs
