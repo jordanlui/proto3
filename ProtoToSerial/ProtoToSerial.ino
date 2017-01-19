@@ -26,8 +26,7 @@
 #include <Wire.h>
 #include <WireExt.h>
 #include <elapsedMillis.h>
-#include <ArduinoJson.h>]
-
+#include <ArduinoJson.h>
 #include <SPI.h>
 
 // IMU Setup

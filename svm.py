@@ -27,10 +27,10 @@ import sys
 from plot_confusion_matrix import plot_confusion_matrix
 
 # File paths for accessing data
-path ='../Data/dec13_1'
+path ='../Data/dec21_1'
 output_path = '../Analysis/'
-output_file = 'dec13.csv'
-class_names = ['nominal flexion','affected flexion','upward']
+output_file = 'jan18.csv'
+class_names = ['nominal flexion','affected flexion','upward','noise']
 # Function parameters
 cvalue = 2e-3
 
@@ -140,7 +140,8 @@ x_train,x_test = normtraintest(x_train,x_test)
 
 # Create SVM Model
 
-lin_clf = svm.SVC(kernel='poly',degree=3)
+lin_clf = svm.SVC(kernel='linear')
+#lin_clf = svm.SVC(kernel='poly',degree=4)
 lin_clf.fit(x_train,t_train)
 
 # Overall Accuracy
