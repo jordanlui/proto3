@@ -27,9 +27,9 @@ import sys
 from plot_confusion_matrix import plot_confusion_matrix
 
 # File paths for accessing data
-path ='../Data/dec21_1'
+path ='../Data/proto3_combined/'
 output_path = '../Analysis/'
-output_file = 'jan18.csv'
+output_file = 'proto3.csv'
 class_names = ['nominal flexion','affected flexion','upward','noise']
 # Function parameters
 cvalue = 2e-3
@@ -50,7 +50,7 @@ def xmatrix(files):
         for row in data:
             x.append(row)
             t.append(gesture)
-    
+    # Otherwise we have multiple files and need to iterate through them.
     else:
         
         for file in files:
@@ -59,7 +59,7 @@ def xmatrix(files):
             
             # Remove the header row
             data = data[1:,:]
-            # Find the gesture number
+            # Use RegEx to get the gesture number
             trial_info = re.findall('\[([0-9]{1,2})\]',file)
             gesture = int(trial_info[1])
 
@@ -111,10 +111,10 @@ filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
 
 # Shuffle file list and remove some for testing. Seed the shuffle.
-random.seed(1)
+random.seed(2)
 filelist = random.sample(filelist,len(filelist))
 
-segment = 0.15 # Percentage of data that we test on
+segment = 0.20 # Percentage of data that we test on
 file_train = filelist[:numfiles-int(segment * numfiles)]
 file_test = filelist[-int(segment * numfiles):]
 
@@ -123,10 +123,14 @@ x_train,t_train = xmatrix(file_train)
 x_test,t_test = xmatrix(file_test)
 matrix_names = ['x_train','t_train','x_test','t_test']
 
+# Cut out columns corresponding to FSR 5,6, which we don't currently use
+x_train = np.hstack((x_train[:,0:30],x_train[:,32:]))
+x_test = np.hstack((x_test[:,0:30],x_test[:,32:]))
+
 # Save these to file
-for i, matrix in enumerate([x_train,t_train,x_test,t_test]):
-    matrix = np.asarray(matrix)
-    np.savetxt(matrix_names[i]+'.csv',matrix,delimiter=',')
+#for i, matrix in enumerate([x_train,t_train,x_test,t_test]):
+#    matrix = np.asarray(matrix)
+#    np.savetxt(matrix_names[i]+'.csv',matrix,delimiter=',')
 # Save to a single file
 
 # Cut out two columns since we aren't using the FSR Data
@@ -140,8 +144,9 @@ x_train,x_test = normtraintest(x_train,x_test)
 
 # Create SVM Model
 
-lin_clf = svm.SVC(kernel='linear')
-#lin_clf = svm.SVC(kernel='poly',degree=4)
+#lin_clf = svm.SVC(kernel='linear')
+lin_clf = svm.SVC(kernel='rbf')
+#lin_clf = svm.SVC(kernel='poly',degree=2)
 lin_clf.fit(x_train,t_train)
 
 # Overall Accuracy
@@ -154,7 +159,7 @@ accuracy = numcorrect / len(testdata) * 100
 print 'overall accuracy is','{:04.2f}'.format(accuracy)
 
 # Confusion matrix
-plt.figure(1)
+plt.figure()
 conf = confusion_matrix(t_test,testdata)
 plot_confusion_matrix(conf,classes=class_names,normalize=True)
 
@@ -182,11 +187,11 @@ plot_confusion_matrix(conf,classes=class_names,normalize=True)
 
 # Testing Accuracy
 
-# Data plots
-x1,t1 = xmatrix(file_test[-1])
-plt.figure(2)
-plt.plot(x1[:,0:2],label='distance')
-#plt.plot(x1[:,-9:-4],label='fsr') # FSR Data # Distance sensors
-plt.plot(x1[:,-3:],label='IMU') #IMU Data
-plt.legend()
-plt.show()
+# Plotting of Distance and IMU through movements
+#x1,t1 = xmatrix(file_test[-1])
+#plt.figure(2)
+#plt.plot(x1[:,0:2],label='distance')
+##plt.plot(x1[:,-9:-4],label='fsr') # FSR Data # Distance sensors
+#plt.plot(x1[:,-3:],label='IMU') #IMU Data
+#plt.legend()
+#plt.show()
