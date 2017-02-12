@@ -163,6 +163,19 @@ plt.figure()
 conf = confusion_matrix(t_test,testdata)
 plot_confusion_matrix(conf,classes=class_names,normalize=True)
 
+# Try Feature Selection
+#from sklearn.svm import LinearSVC
+#from sklearn.feature_selection import SelectFromModel
+#x_train.shape
+#lsvc = LinearSVC(C=0.01, penalty="l1", dual=False).fit(x_train,t_train)
+#model = SelectFromModel(lsvc, prefit=True)
+#x_new = model.transform(x_train)
+#x_new.shape
+
+#SVM Model again
+
+
+
 # Test Model Against each piece of testing data
 # WIP - needs more work 
 #accuracy = []
