@@ -21,7 +21,8 @@ import operator
 import datetime
 
 # File paths for accessing data
-path ='../Data/proto3_combined/'
+#path ='../Data/proto3_combined/'
+path ='../Data/proto3_combined/individuals/5'
 output_dir = '../Analysis/'
 output_file = 'proto3_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
@@ -32,8 +33,8 @@ cvalue = 2e-3
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
-seedrange = 5 # Number of random seeds we will try
-segment = 0.10 # Percentage of data that we test on
+seedrange = 50 # Number of random seeds we will try
+segment = 0.30 # Percentage of data that we test on
 #seed = 0
 
 # Functions
@@ -169,7 +170,8 @@ def model(seed,segment,plotbool):
 #    confnorm = confusion_matrix_normalize(conf)
     if plotbool==1: 
         confnorm = plot_confusion_matrix(conf,classes=class_names,normalize=True)
-    
+    else:
+        confnorm = confusion_matrix_normalize(conf)
     # Save results to file
     # The data we will save
     outputdata=str(datetime.datetime.now()),accuracy,numcorrect,confnorm[0,0],confnorm[1,1],confnorm[2,2],confnorm[3,3],segment,seed,int(x_train.shape[1])
@@ -200,22 +202,22 @@ def main():
 
         random.seed(a=seed)
         filelist = random.sample(filelist,numfiles)
-        accuracy, confnorm = model(seed,segment,plotbool=1)
+        accuracy, confnorm = model(seed,segment,plotbool=0)
         ac.append(accuracy)
         ac2.append(confnorm.diagonal())
         print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
     # Analysis of our results
-    ac_max = np.max(ac)
-    ac_mean = np.mean(ac)
-    ac_min = np.min(ac)
+    ac_max = np.nanmax(ac)
+    ac_mean = np.nanmean(ac)
+    ac_min = np.nanmin(ac)
     ac2 = np.asarray(ac2)
-    ac2_max = np.max(ac2,axis=0)
-    ac2_mean = np.mean(ac2,axis=0)
-    ac2_min = np.min(ac2,axis=0)
+    ac2_max = np.nanmax(ac2,axis=0)
+    ac2_mean = np.nanmean(ac2,axis=0)
+    ac2_min = np.nanmin(ac2,axis=0)
     
     # Give a meaningful result summary
     index, value = max(enumerate(ac),key=operator.itemgetter(1))
-    output_string = 'Patient1. In %d randomizations, %d from seed %d has highest overall accuracy. Individual accuracies for this seed are %s. Highest individuals are %s. Segment %.2f' %(seedrange,value,index,str(ac2[index,:]),str(ac2_max),segment)
+    output_string = 'Patient5. In %d randomizations, %d from seed %d has highest overall accuracy. Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
     print output_string
     # Print to a file
     text_file = open(os.path.join(output_dir,"log.txt"), "a")
