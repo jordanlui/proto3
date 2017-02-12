@@ -50,7 +50,7 @@ from sklearn.metrics import confusion_matrix
 
 
 def plot_confusion_matrix(cm, classes,
-                          normalize=True,
+                          normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
     """
@@ -66,13 +66,13 @@ def plot_confusion_matrix(cm, classes,
 
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-#        print("Normalized confusion matrix")
+        print("Normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
 
-#    print("{0:.4f}".format(cm))
-#    print(cm)
-    return cm
+#    print("{0:.4s}".format(cm))
+    print(cm)
+    
 
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
@@ -83,6 +83,9 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    plt.figure()
+    plt.show()
+    return cm
 
 # Compute confusion matrix
 #cnf_matrix = confusion_matrix(y_test, y_pred)
@@ -94,8 +97,9 @@ def plot_confusion_matrix(cm, classes,
 #                      title='Confusion matrix, without normalization')
 #
 ## Plot normalized confusion matrix
-plt.figure()
+#plt.figure()
 #plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
 #                      title='Normalized confusion matrix')
 
-plt.show()
+#plt.show()
+#return cm

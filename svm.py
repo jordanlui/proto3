@@ -4,16 +4,8 @@ Created on Wed Dec 07 12:21:18 2016
 
 @author: Jordan
 """
-
-# SVM analysis on results
-# Data format
-#dist1	dist2	omron8	omron8	omron8	omron8	omron8	omron8	omron8	omron8	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	omron16	fsr1	fsr2	fsr3	fsr4	fsr5	fsr6	orientation1	orientation2	orientation3
-
-
 # Libraries
 from __future__ import division
-import scipy.io as sio
-import matplotlib.pyplot as plt
 import numpy as np
 #from sklearn import neighbors, datasets
 from sklearn import svm
@@ -26,6 +18,7 @@ import re
 import sys
 from plot_confusion_matrix import plot_confusion_matrix
 import operator
+import datetime
 
 # File paths for accessing data
 path ='../Data/proto3_combined/'
@@ -39,8 +32,9 @@ cvalue = 2e-3
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
-seedrange = 50 # Number of random seeds we will try
+seedrange = 5 # Number of random seeds we will try
 segment = 0.10 # Percentage of data that we test on
+#seed = 0
 
 # Functions
 
@@ -130,37 +124,32 @@ def exportresults(filename,data):
 def confusion_matrix_normalize(conf):
     conf = conf.astype('float') / conf.sum(axis=1)[:, np.newaxis]
     return conf
-def model(seed,segment):
+def model(seed,segment,plotbool):
     # Model that performs our analysis and generates confusion matrix
     # Get our global variables
-    global filelist, numfiles
-    random.seed(seed)
+    global filelist, numfiles, accuracy, conf, confnorm
+#    random.seed(a=seed)
     # Shuffle the filelist according to the seed
-    filelist = random.sample(filelist,numfiles)
+    
     
     # Segment into training and testing list
     file_train = filelist[:numfiles-int(segment * numfiles)]
     file_test = filelist[-int(segment * numfiles):]
     
-    
     # Generate x_train and x_test matrices
     x_train,t_train = xmatrix(file_train)
     x_test,t_test = xmatrix(file_test)
-    matrix_names = ['x_train','t_train','x_test','t_test']
+#    matrix_names = ['x_train','t_train','x_test','t_test']
     
     # Cut out two columns since we aren't using the FSR 5,6 Data
     x_train = np.delete(x_train,[30,31],1)
     x_test = np.delete(x_test,[30,31],1)
-    # Note the following code option also worked
-    #x_train = np.hstack((x_train[:,0:30],x_train[:,32:]))
-    #x_test = np.hstack((x_test[:,0:30],x_test[:,32:]))
-    
+
     # Data preprocessing
     # Normalize the data, column-wise according to mean, stdev of training data
     x_train,x_test = normtraintest(x_train,x_test)
     
     # Create SVM Model
-    
     #lin_clf = svm.SVC(kernel='linear')
     lin_clf = svm.SVC(kernel='rbf')
     #lin_clf = svm.SVC(kernel='poly',degree=2)
@@ -173,16 +162,19 @@ def model(seed,segment):
     compare = testdata==t_test # Compare predictions to the actual test values
     numcorrect = np.sum(compare)
     accuracy = numcorrect / len(testdata) * 100 
-#    print 'overall test accuracy is','{:04.2f}'.format(accuracy)
+    print 'overall test accuracy is','{:04.2f}'.format(accuracy)
     
     # Confusion matrix
     conf = confusion_matrix(t_test,testdata)
-    confnorm = confusion_matrix_normalize(conf)
-#    confnorm = plot_confusion_matrix(conf,classes=class_names,normalize=True)
+#    confnorm = confusion_matrix_normalize(conf)
+    if plotbool==1: 
+        confnorm = plot_confusion_matrix(conf,classes=class_names,normalize=True)
     
     # Save results to file
     # The data we will save
-    data = [str(datetime.datetime.now()),accuracy,numcorrect,confnorm[0,0],confnorm[1,1],confnorm[2,2],confnorm[3,3],segment,seed,int(x_train.shape[1])]
+    outputdata=str(datetime.datetime.now()),accuracy,numcorrect,confnorm[0,0],confnorm[1,1],confnorm[2,2],confnorm[3,3],segment,seed,int(x_train.shape[1])
+#    data = [str(datetime.datetime.now()),accuracy,numcorrect,confnorm[0,0],confnorm[1,1],confnorm[2,2],confnorm[3,3],segment,seed,int(x_train.shape[1])]
+    data=outputdata
     # Function to write them to a row in a csv
     exportresults(output_path,data)
     return accuracy,confnorm
@@ -196,37 +188,44 @@ def main():
     # move up in code to improve structure later
     
 #    Loop through several seed values and see our highest and average accuracies
-    global ac, ac2, index, value
-      
-    for segment in range(1,10):
-        segment = segment/10
-        ac = []
-        ac2 = []  
-        
-        for seed in range(0,seedrange):
-    #    seed=2 # test
-            
-            accuracy, confnorm = model(seed,segment)
-            ac.append(accuracy)
-            ac2.append(confnorm.diagonal())
-            print 'Seed %d of %d, acc=%.2f'%(seed+1,seedrange,accuracy)
-        # Analysis of our values
-        ac_max = np.max(ac)
-        ac_mean = np.mean(ac)
-        ac_min = np.min(ac)
-        ac2 = np.asarray(ac2)
-        ac2_max = np.max(ac2,axis=0)
-        ac2_mean = np.mean(ac2,axis=0)
-        ac2_min = np.min(ac2,axis=0)
-        
-        # Give a meaningful result summary
-        index, value = max(enumerate(ac),key=operator.itemgetter(1))
-        output_string = 'In %d randomizations, %d from seed %d has highest mean accuracy. Individual accuracies for this seed are %s. Highest individuals are %s. Segment %.2f' %(seedrange,value,index,str(ac2[index,:]),str(ac2_max),segment)
-        print output_string
-        # Print to a file
-        text_file = open(os.path.join(output_dir,"log.txt"), "a")
-        text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
-        text_file.close()
+    global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
+#   Old Code that is used to loop through different segment values and find the best combination. Not needed   
+#    for segment in range(1,10):
+#        segment = segment/10
+    
+# Version of code for looping through various seed values    
+    ac = []
+    ac2 = []  
+    for seed in range(0,seedrange+1):
+
+        random.seed(a=seed)
+        filelist = random.sample(filelist,numfiles)
+        accuracy, confnorm = model(seed,segment,plotbool=1)
+        ac.append(accuracy)
+        ac2.append(confnorm.diagonal())
+        print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
+    # Analysis of our results
+    ac_max = np.max(ac)
+    ac_mean = np.mean(ac)
+    ac_min = np.min(ac)
+    ac2 = np.asarray(ac2)
+    ac2_max = np.max(ac2,axis=0)
+    ac2_mean = np.mean(ac2,axis=0)
+    ac2_min = np.min(ac2,axis=0)
+    
+    # Give a meaningful result summary
+    index, value = max(enumerate(ac),key=operator.itemgetter(1))
+    output_string = 'Patient1. In %d randomizations, %d from seed %d has highest overall accuracy. Individual accuracies for this seed are %s. Highest individuals are %s. Segment %.2f' %(seedrange,value,index,str(ac2[index,:]),str(ac2_max),segment)
+    print output_string
+    # Print to a file
+    text_file = open(os.path.join(output_dir,"log.txt"), "a")
+    text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
+    text_file.close()
+    # Single run Version of code
+#    random.seed(a=seed)
+#    filelist = random.sample(filelist,numfiles)
+#    accuracy, confnorm = model(seed,segment,plotbool=1)
+#    print 'seed is',seed
     
     # Try Feature Selection
     #from sklearn.svm import LinearSVC
