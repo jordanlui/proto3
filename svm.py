@@ -28,8 +28,9 @@ from plot_confusion_matrix import plot_confusion_matrix
 
 # File paths for accessing data
 path ='../Data/proto3_combined/'
-output_path = '../Analysis/'
-output_file = 'proto3.csv'
+output_dir = '../Analysis/'
+output_file = 'proto3_analysis.csv'
+output_path = os.path.join(output_dir,output_file)
 class_names = ['nominal flexion','affected flexion','upward','noise']
 # Function parameters
 cvalue = 2e-3
@@ -37,7 +38,7 @@ cvalue = 2e-3
 # Functions
 
 def xmatrix(files):
-    # Accepts a list of files and builds x matrix and t matrix
+    # Accepts a list of files, extracts each row, builds x matrix and t matrix
     x = []
     t = []
     # Check if we have a single file input
@@ -74,21 +75,27 @@ def xmatrix(files):
     return x,t
 
 def normtraintest(train,test):
-    # Normalizes a train and test matrix, in column by column fashion
+    
+    # Normalizes a train and test matrix, in column by column fashion, 
+    # in relation to the mean and stdev of the training data
     # Scales each column values from 0 to 1. 
     # Standardizes each column by subtracting mean and dividing by STDEV    
     # Currently you must put two inputs. Can fix this later.
 
     # Loop through our data, one column at a time
+
     for i in range(0,train.shape[1]):
+        # Extract a column of data from train and test data
         coltrain = train[:,i]
         coltest = test[:,i]
+        # Computer max, min, mean, stdev from the training data
         colmax = np.max(coltrain)
         colmin = np.min(coltrain)
         mean = np.mean(coltrain)
         std = np.std(coltrain)
         
-        # Standardize the data        
+        # Standardize training and test data with training data mean, stdev
+        # Data should be mean shifted and scaled to so all columns have equal stdev
         coltrain = (coltrain - mean)/std
         coltest = (coltest - mean)/std        
         
@@ -105,16 +112,40 @@ def normtraintest(train,test):
         test[:,i] = coltest
         
     return train,test
-
-# Get a list of files 
+def exportresults(filename,data):
+#    file_exists = os.path.isfile(filename)
+    with open(filename,'ab') as csvfile:
+        logwriter = csv.writer(csvfile,delimiter=',',quotechar='|',quoting=csv.QUOTE_MINIMAL)
+        logwriter.writerow(data)
+#        filednames = ['']
+#        logwriter = csv.DictWriter(csvfile,fieldnames=filednames)
+#        if not file_exists:
+#            logwriter.writeheader()
+#        logwriter.writerow()
+def confusion_matrix_normalize(conf):
+    conf = conf.astype('float') / conf.sum(axis=1)[:, np.newaxis]
+    return conf
+def model(seed,segment):
+    # Model that performs our analysis and generates confusion matrix
+    random.seed(seed)
+# Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
 
+# This is where we would begin our loop
+# Parameters 
+# move up in code to improve structure later
+seedrange = 15 # Number of random seeds we will try
+segment = 0.20 # Percentage of data that we test on
 # Shuffle file list and remove some for testing. Seed the shuffle.
-random.seed(2)
+#for seed in range(0,seedrange):
+seed=2 # test
+#model(seed,segment)
+
+# Shuffle the filelist according to the seed
 filelist = random.sample(filelist,len(filelist))
 
-segment = 0.20 # Percentage of data that we test on
+# Segment into training and testing list
 file_train = filelist[:numfiles-int(segment * numfiles)]
 file_test = filelist[-int(segment * numfiles):]
 
@@ -123,24 +154,16 @@ x_train,t_train = xmatrix(file_train)
 x_test,t_test = xmatrix(file_test)
 matrix_names = ['x_train','t_train','x_test','t_test']
 
-# Cut out columns corresponding to FSR 5,6, which we don't currently use
-x_train = np.hstack((x_train[:,0:30],x_train[:,32:]))
-x_test = np.hstack((x_test[:,0:30],x_test[:,32:]))
-
-# Save these to file
-#for i, matrix in enumerate([x_train,t_train,x_test,t_test]):
-#    matrix = np.asarray(matrix)
-#    np.savetxt(matrix_names[i]+'.csv',matrix,delimiter=',')
-# Save to a single file
-
-# Cut out two columns since we aren't using the FSR Data
-#x_train = np.delete(x_train,[30,31],1)
-#x_test = np.delete(x_test,[30,31],1)
+# Cut out two columns since we aren't using the FSR 5,6 Data
+x_train = np.delete(x_train,[30,31],1)
+x_test = np.delete(x_test,[30,31],1)
+# Note the following code option also worked
+#x_train = np.hstack((x_train[:,0:30],x_train[:,32:]))
+#x_test = np.hstack((x_test[:,0:30],x_test[:,32:]))
 
 # Data preprocessing
-# Normalize the data, column-wise
+# Normalize the data, column-wise according to mean, stdev of training data
 x_train,x_test = normtraintest(x_train,x_test)
-
 
 # Create SVM Model
 
@@ -153,15 +176,21 @@ lin_clf.fit(x_train,t_train)
 testdata = lin_clf.predict(x_test)
 testdata = np.reshape(testdata,(len(testdata),1)) # reshape the data
 
-compare = testdata==t_test
+compare = testdata==t_test # Compare predictions to the actual test values
 numcorrect = np.sum(compare)
 accuracy = numcorrect / len(testdata) * 100 
-print 'overall accuracy is','{:04.2f}'.format(accuracy)
+print 'overall test accuracy is','{:04.2f}'.format(accuracy)
 
 # Confusion matrix
-plt.figure()
 conf = confusion_matrix(t_test,testdata)
+confnorm = confusion_matrix_normalize(conf)
 plot_confusion_matrix(conf,classes=class_names,normalize=True)
+
+# Save results to file
+# The data we will save
+data = [str(datetime.datetime.now()),accuracy,numcorrect,confnorm[0,0],confnorm[1,1],confnorm[2,2],confnorm[3,3],segment,seed,int(x_train.shape[1])]
+# Function to write them to a row in a csv
+exportresults(output_path,data)
 
 # Try Feature Selection
 #from sklearn.svm import LinearSVC
@@ -172,33 +201,6 @@ plot_confusion_matrix(conf,classes=class_names,normalize=True)
 #x_new = model.transform(x_train)
 #x_new.shape
 
-#SVM Model again
-
-
-
-# Test Model Against each piece of testing data
-# WIP - needs more work 
-#accuracy = []
-#for file in file_test:
-#    x1,t1 = xmatrix(file)
-#    
-#    # Temporary resizing of files. Remove
-##    x1 = np.delete(x1,[30,31],1)
-#
-#    testdata = lin_clf.predict(x1)
-#    testdata = np.reshape(testdata,(len(testdata),1)) # reshape the data
-#
-#    # Compare to our test data
-#    
-#    compare = testdata==t1
-#    numcorrect = np.sum(compare)
-#    acc = numcorrect / len(testdata) * 100 
-#print 'summarize accuracy'
-#print accuracy
-# Training Accuracy
-
-
-# Testing Accuracy
 
 # Plotting of Distance and IMU through movements
 #x1,t1 = xmatrix(file_test[-1])

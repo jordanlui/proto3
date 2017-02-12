@@ -50,7 +50,7 @@ from sklearn.metrics import confusion_matrix
 
 
 def plot_confusion_matrix(cm, classes,
-                          normalize=False,
+                          normalize=True,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
     """
