@@ -33,9 +33,9 @@ class_names  = [60,55,50,45,40,35,30,25,20]
 cvalue = 2e-3
 seedrange = 100 # Number of random seeds we will try
 segment = 0.30 # Percentage of data that we test on
-plotbool=0 # Flag for plotting on or off
-#seed = 10
-singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation
+plotbool=1 # Flag for plotting on or off
+seed = 65
+singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation
 
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
