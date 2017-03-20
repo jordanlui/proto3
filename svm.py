@@ -22,19 +22,20 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto3_combined/individuals/5'
+path ='../Data/armpositions_feb28'
 output_dir = '../Analysis/'
 output_file = 'proto3_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
-class_names = ['nominal flexion','affected flexion','upward','noise']
+class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
+#class_names = ['nominal flexion','affected flexion','upward','noise']
 
 # Run Parameters
 cvalue = 2e-3
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
-seedrange = 50 # Number of random seeds we will try
-segment = 0.30 # Percentage of data that we test on
+seedrange = 25 # Number of random seeds we will try
+segment = 0.50 # Percentage of data that we test on
 #seed = 0
 
 # Functions
@@ -202,7 +203,7 @@ def main():
 
         random.seed(a=seed)
         filelist = random.sample(filelist,numfiles)
-        accuracy, confnorm = model(seed,segment,plotbool=0)
+        accuracy, confnorm = model(seed,segment,plotbool=1)
         ac.append(accuracy)
         ac2.append(confnorm.diagonal())
         print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
@@ -217,7 +218,7 @@ def main():
     
     # Give a meaningful result summary
     index, value = max(enumerate(ac),key=operator.itemgetter(1))
-    output_string = 'Patient5. In %d randomizations, %d from seed %d has highest overall accuracy. Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    output_string = 'Patient2. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
     print output_string
     # Print to a file
     text_file = open(os.path.join(output_dir,"log.txt"), "a")
