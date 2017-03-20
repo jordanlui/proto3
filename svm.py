@@ -11,32 +11,37 @@ import numpy as np
 from sklearn import svm
 from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
-import glob, os
-import csv
-import random
-import re
-import sys
+import glob, os, csv, random, re, sys
 from plot_confusion_matrix import plot_confusion_matrix
 import operator
 import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/armpositions_feb28'
+path ='../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto3_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
-class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
+# Class names
+class_names  = [60,55,50,45,40,35,30,25,20]
+# Names from the 9 static arm position test are below
+#class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
+# Names from the old dynamic movement classification test
 #class_names = ['nominal flexion','affected flexion','upward','noise']
 
 # Run Parameters
 cvalue = 2e-3
+seedrange = 100 # Number of random seeds we will try
+segment = 0.30 # Percentage of data that we test on
+plotbool=0 # Flag for plotting on or off
+#seed = 10
+singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation
+
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
-seedrange = 25 # Number of random seeds we will try
-segment = 0.50 # Percentage of data that we test on
-#seed = 0
+
+
 
 # Functions
 
@@ -164,7 +169,7 @@ def model(seed,segment,plotbool):
     compare = testdata==t_test # Compare predictions to the actual test values
     numcorrect = np.sum(compare)
     accuracy = numcorrect / len(testdata) * 100 
-    print 'overall test accuracy is','{:04.2f}'.format(accuracy)
+#    print 'overall test accuracy is','{:04.2f}'.format(accuracy)
     
     # Confusion matrix
     conf = confusion_matrix(t_test,testdata)
@@ -197,38 +202,50 @@ def main():
 #        segment = segment/10
     
 # Version of code for looping through various seed values    
-    ac = []
-    ac2 = []  
-    for seed in range(0,seedrange+1):
-
+    if singlerun == 1:
+        # Execute a single run
+        # Single run Version of code
         random.seed(a=seed)
         filelist = random.sample(filelist,numfiles)
-        accuracy, confnorm = model(seed,segment,plotbool=1)
-        ac.append(accuracy)
-        ac2.append(confnorm.diagonal())
-        print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
-    # Analysis of our results
-    ac_max = np.nanmax(ac)
-    ac_mean = np.nanmean(ac)
-    ac_min = np.nanmin(ac)
-    ac2 = np.asarray(ac2)
-    ac2_max = np.nanmax(ac2,axis=0)
-    ac2_mean = np.nanmean(ac2,axis=0)
-    ac2_min = np.nanmin(ac2,axis=0)
+        accuracy, confnorm = model(seed,segment,plotbool)
+        print 'seed is',seed
+#        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+        output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
+        print output_string
+    else:
+        # Execute a looped run through many seed values
+        ac = []
+        ac2 = []  
+        for seed in range(0,seedrange+1):
     
-    # Give a meaningful result summary
-    index, value = max(enumerate(ac),key=operator.itemgetter(1))
-    output_string = 'Patient2. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-    print output_string
-    # Print to a file
+            random.seed(a=seed)
+            filelist = random.sample(filelist,numfiles)
+            accuracy, confnorm = model(seed,segment,plotbool)
+            ac.append(accuracy)
+            ac2.append(confnorm.diagonal())
+            print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
+        
+        # Stat Analysis of our results
+        ac_max = np.nanmax(ac)
+        ac_mean = np.nanmean(ac)
+        ac_min = np.nanmin(ac)
+        ac2 = np.asarray(ac2)
+        ac2_max = np.nanmax(ac2,axis=0)
+        ac2_mean = np.nanmean(ac2,axis=0)
+        ac2_min = np.nanmin(ac2,axis=0)
+        
+        # Give a meaningful result summary
+        # Finx the trial that had the highest overall accuracy        
+        index, value = max(enumerate(ac),key=operator.itemgetter(1))
+        # Generate a statement to summarize our trials
+        output_string = 'Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+        print output_string
+    
+    # Print to a logfile
     text_file = open(os.path.join(output_dir,"log.txt"), "a")
     text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
     text_file.close()
-    # Single run Version of code
-#    random.seed(a=seed)
-#    filelist = random.sample(filelist,numfiles)
-#    accuracy, confnorm = model(seed,segment,plotbool=1)
-#    print 'seed is',seed
+    
     
     # Try Feature Selection
     #from sklearn.svm import LinearSVC
@@ -239,14 +256,5 @@ def main():
     #x_new = model.transform(x_train)
     #x_new.shape
     
-    
-    # Plotting of Distance and IMU through movements
-    #x1,t1 = xmatrix(file_test[-1])
-    #plt.figure(2)
-    #plt.plot(x1[:,0:2],label='distance')
-    ##plt.plot(x1[:,-9:-4],label='fsr') # FSR Data # Distance sensors
-    #plt.plot(x1[:,-3:],label='IMU') #IMU Data
-    #plt.legend()
-    #plt.show()
 if __name__ == '__main__':
     main()
