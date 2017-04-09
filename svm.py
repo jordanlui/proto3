@@ -18,12 +18,13 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/armruler_feb24'
+path ='../Data/proto4/2'
 output_dir = '../Analysis/'
-output_file = 'proto3_analysis.csv'
+output_file = 'proto4_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 # Class names
-class_names  = [60,55,50,45,40,35,30,25,20]
+#class_names  = [60,55,50,45,40,35,30,25,20]
+class_names = np.asarray(range(1,23))
 # Names from the 9 static arm position test are below
 #class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
 # Names from the old dynamic movement classification test
@@ -35,7 +36,7 @@ seedrange = 100 # Number of random seeds we will try
 segment = 0.30 # Percentage of data that we test on
 plotbool=1 # Flag for plotting on or off
 seed = 65
-singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation
+singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
@@ -149,8 +150,8 @@ def model(seed,segment,plotbool):
 #    matrix_names = ['x_train','t_train','x_test','t_test']
     
     # Cut out two columns since we aren't using the FSR 5,6 Data
-    x_train = np.delete(x_train,[30,31],1)
-    x_test = np.delete(x_test,[30,31],1)
+#    x_train = np.delete(x_train,[30,31],1)
+#    x_test = np.delete(x_test,[30,31],1)
 
     # Data preprocessing
     # Normalize the data, column-wise according to mean, stdev of training data
