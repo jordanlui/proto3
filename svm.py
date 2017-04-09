@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """
 Created on Wed Dec 07 12:21:18 2016
 
@@ -18,7 +18,8 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/armruler_feb24'
+path ='../Data/proto4/1'
+#path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
@@ -30,14 +31,18 @@ class_names  = [60,55,50,45,40,35,30,25,20]
 # Names from the old dynamic movement classification test
 #class_names = ['nominal flexion','affected flexion','upward','noise']
 
+# Declare globals here if we remove the main loop
+global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
+global x_train, x_test, nancount
+
 # Run Parameters
 cvalue = 2e-3
 seedrange = 100 # Number of random seeds we will try
 segment = 0.30 # Percentage of data that we test on
 plotbool=1 # Flag for plotting on or off
-seed = 65
+seed = 1
 singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
-
+nancount = 0
 # Read file list from directory
 filelist = glob.glob(os.path.join(path,'*.csv'))
 numfiles = len(filelist)
@@ -50,13 +55,14 @@ def xmatrix(files):
     # Accepts a list of files, extracts each row, builds x matrix and t matrix
     x = []
     t = []
+    global nancount
     # Check if we have a single file input
     if isinstance(files,str) == True:
         # Then just load the single file and output to x and t
         data = np.genfromtxt(files,delimiter=',')
-        data = data[1:,:]
+        data = data[1:,:] # Only consider data from row 1 downwards (due to headers)
         trial_info = re.findall('\[([0-9]{1,2})\]',files)
-        gesture = trial_info[1]
+        gesture = int(trial_info[1])
         for row in data:
             x.append(row)
             t.append(gesture)
@@ -74,8 +80,12 @@ def xmatrix(files):
             gesture = int(trial_info[1])
 
             for row in data:
-                x.append(row)
-                t.append(gesture)
+                if np.isnan(row).any() == True:
+                    print "nan found in file",file
+                    nancount = nancount + 1
+                else:
+                    x.append(row)
+                    t.append(gesture)
     # Reformat as arrays
     x = np.asarray(x)
     t = np.asarray(t)
@@ -92,7 +102,7 @@ def normtraintest(train,test):
     # Currently you must put two inputs. Can fix this later.
 
     # Loop through our data, one column at a time
-
+    print 'shape of train is',train.shape
     for i in range(0,train.shape[1]):
         # Extract a column of data from train and test data
         coltrain = train[:,i]
@@ -135,28 +145,37 @@ def confusion_matrix_normalize(conf):
 def model(seed,segment,plotbool):
     # Model that performs our analysis and generates confusion matrix
     # Get our global variables
-    global filelist, numfiles, accuracy, conf, confnorm
+    global filelist, numfiles, accuracy, conf, confnorm, x_train, x_test, nancount
 #    random.seed(a=seed)
     # Shuffle the filelist according to the seed
     
     
     # Segment into training and testing list
+    # Probably want to update and simplify the method for the data segmentation
     file_train = filelist[:numfiles-int(segment * numfiles)]
     file_test = filelist[-int(segment * numfiles):]
     
     # Generate x_train and x_test matrices
+    # This (archaic) method will read through the files and build out into arrays. Try to improve with a bulk load and shuffle
     x_train,t_train = xmatrix(file_train)
     x_test,t_test = xmatrix(file_test)
 #    matrix_names = ['x_train','t_train','x_test','t_test']
     
+    # Choose the data features we examine
     # Cut out two columns since we aren't using the FSR 5,6 Data
-#    x_train = np.delete(x_train,[30,31],1)
-#    x_test = np.delete(x_test,[30,31],1)
+    x_train = np.delete(x_train,range(4,16),1)
+    x_test = np.delete(x_test,range(4,16),1)
 
     # Data preprocessing
     # Normalize the data, column-wise according to mean, stdev of training data
-    x_train,x_test = normtraintest(x_train,x_test)
+    print "shape of train is", x_train.shape
+    print "shape of test is", x_test.shape
+    print "train max is %d and min is %d. Mean %d" %(np.max(x_train), np.min(x_train), np.mean(x_train))
+    print 'number of nan found in train is', len(np.argwhere(np.isnan(x_train)))
+    print 'number of nan found in train is', len(np.argwhere(np.isnan(x_test)))
     
+    x_train,x_test = normtraintest(x_train,x_test)
+    print "After we normalize, train max is %d and min is %d" %(np.max(x_train), np.min(x_train))
     # Create SVM Model
     #lin_clf = svm.SVC(kernel='linear')
     lin_clf = svm.SVC(kernel='rbf')
@@ -166,13 +185,13 @@ def model(seed,segment,plotbool):
     # Overall Accuracy
     testdata = lin_clf.predict(x_test)
     testdata = np.reshape(testdata,(len(testdata),1)) # reshape the data
-    
+     
     compare = testdata==t_test # Compare predictions to the actual test values
     numcorrect = np.sum(compare)
     accuracy = numcorrect / len(testdata) * 100 
 #    print 'overall test accuracy is','{:04.2f}'.format(accuracy)
     
-    # Confusion matrix
+    # Create the Confusion matrix
     conf = confusion_matrix(t_test,testdata)
 #    confnorm = confusion_matrix_normalize(conf)
     if plotbool==1: 
@@ -197,7 +216,7 @@ def model(seed,segment,plotbool):
 # move up in code to improve structure later
 
 #    Loop through several seed values and see our highest and average accuracies
-global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
+#global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
 #   Old Code that is used to loop through different segment values and find the best combination. Not needed   
 #    for segment in range(1,10):
 #        segment = segment/10
@@ -208,8 +227,9 @@ if singlerun == 1:
     # Single run Version of code
     random.seed(a=seed)
     filelist = random.sample(filelist,numfiles)
-    accuracy, confnorm = model(seed,segment,plotbool)
     print 'seed is',seed
+    accuracy, confnorm = model(seed,segment,plotbool)
+    
 #        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
     output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
     print output_string
