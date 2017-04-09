@@ -18,13 +18,13 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto4/2'
+path ='../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 # Class names
-#class_names  = [60,55,50,45,40,35,30,25,20]
-class_names = np.asarray(range(1,23))
+class_names  = [60,55,50,45,40,35,30,25,20]
+#class_names = np.asarray(range(1,23))
 # Names from the 9 static arm position test are below
 #class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
 # Names from the old dynamic movement classification test
@@ -190,72 +190,64 @@ def model(seed,segment,plotbool):
 
 # End of Functions
 # Begin main loop
-def main():
+#def main():
 
-    # This is where we would begin our loop
-    # Parameters 
-    # move up in code to improve structure later
-    
+# This is where we would begin our loop
+# Parameters 
+# move up in code to improve structure later
+
 #    Loop through several seed values and see our highest and average accuracies
-    global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
+global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
 #   Old Code that is used to loop through different segment values and find the best combination. Not needed   
 #    for segment in range(1,10):
 #        segment = segment/10
-    
+
 # Version of code for looping through various seed values    
-    if singlerun == 1:
-        # Execute a single run
-        # Single run Version of code
+if singlerun == 1:
+    # Execute a single run
+    # Single run Version of code
+    random.seed(a=seed)
+    filelist = random.sample(filelist,numfiles)
+    accuracy, confnorm = model(seed,segment,plotbool)
+    print 'seed is',seed
+#        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
+    print output_string
+else:
+    # Execute a looped run through many seed values
+    ac = []
+    ac2 = []  
+    for seed in range(0,seedrange+1):
+
         random.seed(a=seed)
         filelist = random.sample(filelist,numfiles)
         accuracy, confnorm = model(seed,segment,plotbool)
-        print 'seed is',seed
-#        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-        output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
-        print output_string
-    else:
-        # Execute a looped run through many seed values
-        ac = []
-        ac2 = []  
-        for seed in range(0,seedrange+1):
+        ac.append(accuracy)
+        ac2.append(confnorm.diagonal())
+        print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
     
-            random.seed(a=seed)
-            filelist = random.sample(filelist,numfiles)
-            accuracy, confnorm = model(seed,segment,plotbool)
-            ac.append(accuracy)
-            ac2.append(confnorm.diagonal())
-            print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
-        
-        # Stat Analysis of our results
-        ac_max = np.nanmax(ac)
-        ac_mean = np.nanmean(ac)
-        ac_min = np.nanmin(ac)
-        ac2 = np.asarray(ac2)
-        ac2_max = np.nanmax(ac2,axis=0)
-        ac2_mean = np.nanmean(ac2,axis=0)
-        ac2_min = np.nanmin(ac2,axis=0)
-        
-        # Give a meaningful result summary
-        # Finx the trial that had the highest overall accuracy        
-        index, value = max(enumerate(ac),key=operator.itemgetter(1))
-        # Generate a statement to summarize our trials
-        output_string = 'Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-        print output_string
+    # Stat Analysis of our results
+    ac_max = np.nanmax(ac)
+    ac_mean = np.nanmean(ac)
+    ac_min = np.nanmin(ac)
+    ac2 = np.asarray(ac2)
+    ac2_max = np.nanmax(ac2,axis=0)
+    ac2_mean = np.nanmean(ac2,axis=0)
+    ac2_min = np.nanmin(ac2,axis=0)
     
-    # Print to a logfile
-    text_file = open(os.path.join(output_dir,"log.txt"), "a")
-    text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
-    text_file.close()
+    # Give a meaningful result summary
+    # Finx the trial that had the highest overall accuracy        
+    index, value = max(enumerate(ac),key=operator.itemgetter(1))
+    # Generate a statement to summarize our trials
+    output_string = 'Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    print output_string
+
+# Print to a logfile
+text_file = open(os.path.join(output_dir,"log.txt"), "a")
+text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
+text_file.close()
     
+
     
-    # Try Feature Selection
-    #from sklearn.svm import LinearSVC
-    #from sklearn.feature_selection import SelectFromModel
-    #x_train.shape
-    #lsvc = LinearSVC(C=0.01, penalty="l1", dual=False).fit(x_train,t_train)
-    #model = SelectFromModel(lsvc, prefit=True)
-    #x_new = model.transform(x_train)
-    #x_new.shape
-    
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
