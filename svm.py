@@ -18,8 +18,8 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto4/5'
-#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
+path ='../Data/proto4/'
+paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv'
@@ -38,17 +38,24 @@ global x_train, x_test, nancount
 
 # Run Parameters
 cvalue = 2e-3
-seedrange = 100 # Number of random seeds we will try
+seedrange = 5 # Number of random seeds we will try
 segment = 0.30 # Percentage of data that we test on
 plotbool=1 # Flag for plotting on or off
 seed = 1
-singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
+singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 nancount = 0
-# Read file list from directory
+
+## Generate the filelist
+# Read file list from directory for a single directory run 
 filelist = glob.glob(os.path.join(path,'*.csv'))
+
+
+# Alternatively we may have multiple directories
+filelist = []
+for path in paths:
+    filelist.extend(glob.glob(os.path.join(path,'*.csv')))
+
 numfiles = len(filelist)
-
-
 
 # Functions
 
@@ -154,7 +161,7 @@ def exportresults(filename,data):
 def confusion_matrix_normalize(conf):
     conf = conf.astype('float') / conf.sum(axis=1)[:, np.newaxis]
     return conf
-def model(seed,segment,plotbool):
+def model(seed,segment,plotbool,x):
     # Model that performs our analysis and generates confusion matrix
     # Get our global variables
     global filelist, numfiles, accuracy, conf, confnorm, x_train, x_test, nancount
@@ -174,11 +181,7 @@ def model(seed,segment,plotbool):
     
     # New method
     # Load data into xmatrix
-    x = xmatrix(filelist)  
-    
-    # Shuffle data
-    random.seed(a=seed)
-    x = np.asarray(random.sample(x,len(x)))
+
     # Find index at which we segment our data    
     segindex = int(len(x)*segment)
     
@@ -224,7 +227,7 @@ def model(seed,segment,plotbool):
     # x_test = (x_test - np.mean(x_train,axis=0)) / (np.max(x_train,axis=0) - np.mean(x_train,axis=0))
     # x_train = (x_train - np.mean(x_train,axis=0)) / (np.max(x_train,axis=0) - np.mean(x_train,axis=0))
     
-    print "After we normalize, train max is %d and min is %d" %(np.max(x_train), np.min(x_train))
+#    print "After we normalize, train max is %d and min is %d" %(np.max(x_train), np.min(x_train))
     # Create SVM Model
     #lin_clf = svm.SVC(kernel='linear')
     lin_clf = svm.SVC(kernel='rbf')
@@ -274,10 +277,14 @@ def model(seed,segment,plotbool):
 if singlerun == 1:
     # Execute a single run
     # Single run Version of code
-    random.seed(a=seed)
-    filelist = random.sample(filelist,numfiles)
+#    random.seed(a=seed)
+#    filelist = random.sample(filelist,numfiles)
     print 'seed is',seed
-    accuracy, confnorm = model(seed,segment,plotbool)
+    x = xmatrix(filelist)  
+    # Shuffle data
+    random.seed(a=seed)
+    x = np.asarray(random.sample(x,len(x)))
+    accuracy, confnorm = model(seed,segment,plotbool,x)
     
 #        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
     output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
@@ -285,12 +292,20 @@ if singlerun == 1:
 else:
     # Execute a looped run through many seed values
     ac = []
-    ac2 = []  
+    ac2 = [] 
+    
+    # Load our data into X matrix
+    x = xmatrix(filelist)  
+    
+    
     for seed in range(0,seedrange+1):
 
+        #        random.seed(a=seed)
+        #        filelist = random.sample(filelist,numfiles)
+        # Shuffle data
         random.seed(a=seed)
-        filelist = random.sample(filelist,numfiles)
-        accuracy, confnorm = model(seed,segment,plotbool)
+        x = np.asarray(random.sample(x,len(x)))
+        accuracy, confnorm = model(seed,segment,plotbool,x)
         ac.append(accuracy)
         ac2.append(confnorm.diagonal())
         print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
