@@ -18,7 +18,7 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto4/3'
+path ='../Data/proto4/5'
 #paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
@@ -182,6 +182,9 @@ def model(seed,segment,plotbool):
     # Find index at which we segment our data    
     segindex = int(len(x)*segment)
     
+    # Try to normalize in place instead of using the function
+    #    x[:,3:] = (x[:,3:] - x[:,3:].mean()) / (x[:,3:].max() - x[:,3:].min())
+    
     # Segment our data    
     # Grab X values. Column 3 to the end of the table
     x_train = x[:segindex,3:]
@@ -193,22 +196,34 @@ def model(seed,segment,plotbool):
     t_train = np.reshape(t_train,(len(t_train),1))
     t_test = np.reshape(t_test,(len(t_test),1))
     
-#    matrix_names = ['x_train','t_train','x_test','t_test']
+    
+    
+    #    matrix_names = ['x_train','t_train','x_test','t_test']
     
     # Choose the data features we examine
     # Currently we ignore the 6 FSR values as well as raw accelerometer and gyro data.
     x_train = np.delete(x_train,range(4,16),1)
     x_test = np.delete(x_test,range(4,16),1)
+    
+
 
     # Data preprocessing
-    # Normalize the data, column-wise according to mean, stdev of training data
-    print "shape of train is", x_train.shape
-    print "shape of test is", x_test.shape
-    print "train max is %d and min is %d. Mean %d" %(np.max(x_train), np.min(x_train), np.mean(x_train))
-    print 'number of nan found in train is', len(np.argwhere(np.isnan(x_train)))
-    print 'number of nan found in train is', len(np.argwhere(np.isnan(x_test)))
+    # Normalize the data
+#    print "shape of train is", x_train.shape
+#    print "shape of test is", x_test.shape
+#    print "train max is %d and min is %d. Mean %d" %(np.max(x_train), np.min(x_train), np.mean(x_train))
+#    print 'number of nan found in train is', len(np.argwhere(np.isnan(x_train)))
+#    print 'number of nan found in test is', len(np.argwhere(np.isnan(x_test)))
+#    x_train,x_test = normtraintest(x_train,x_test)
     
-    x_train,x_test = normtraintest(x_train,x_test)
+    # Try to normalize here
+    normmean = np.mean(x_train,axis=0)
+    normstdev = np.std(x_train,axis=0)
+    x_test = (x_test - normmean) / normstdev
+    x_train = (x_train - normmean) / normstdev
+    # x_test = (x_test - np.mean(x_train,axis=0)) / (np.max(x_train,axis=0) - np.mean(x_train,axis=0))
+    # x_train = (x_train - np.mean(x_train,axis=0)) / (np.max(x_train,axis=0) - np.mean(x_train,axis=0))
+    
     print "After we normalize, train max is %d and min is %d" %(np.max(x_train), np.min(x_train))
     # Create SVM Model
     #lin_clf = svm.SVC(kernel='linear')
