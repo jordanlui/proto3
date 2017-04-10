@@ -18,14 +18,14 @@ import datetime
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto4/1'
+path ='../Data/proto4/3'
 #paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 # Class names
-class_names  = [60,55,50,45,40,35,30,25,20]
+class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
 #class_names = np.asarray(range(1,23))
 # Names from the 9 static arm position test are below
 #class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
@@ -53,11 +53,15 @@ numfiles = len(filelist)
 # Functions
 
 def xmatrix(files):
-    # Accepts a list of files, extracts each row, builds x matrix and t matrix
+    # Accepts a list of files, extracts each row, builds x matrix and t matrix.
+    # Updating the file to export a file of following format:
+    # [patient class trial -data-]
+    # Therefore files with MxN dimension will return a MxN+3 matrix
+    
     x = []
     t = []
     global nancount
-    # Check if we have a single file input
+    # Following executes if we have a single file
     if isinstance(files,str) == True:
         # Then just load the single file and output to x and t
         data = np.genfromtxt(files,delimiter=',')
@@ -78,21 +82,28 @@ def xmatrix(files):
             data = data[1:,:]
             # Use RegEx to get the gesture number
             trial_info = re.findall('\[([0-9]{1,2})\]',file)
+            trial_info = np.asarray(trial_info)
+            trial_info = trial_info.astype(int)
+#            patient = int(trial_info[0])
             gesture = int(trial_info[1])
-
+#            trial = int(trial_info[2])
+            
+            # Loop through the data and save to an array
             for row in data:
+                # Use if loop to check for valid row data, ignoring ragged data
                 if np.isnan(row).any() == True:
                     print "nan found in file",file
                     nancount = nancount + 1
                 else:
-                    x.append(row)
-                    t.append(gesture)
+                    newrow = np.concatenate((trial_info,row),axis=0)                    
+                    x.append(newrow)
+#                    t.append(gesture)
     # Reformat as arrays
     x = np.asarray(x)
-    t = np.asarray(t)
-    t = np.reshape(t,(len(t),1))
+#    t = np.asarray(t)
+#    t = np.reshape(t,(len(t),1))
 
-    return x,t
+    return x
 
 def normtraintest(train,test):
     
@@ -163,19 +174,29 @@ def model(seed,segment,plotbool):
     
     # New method
     # Load data into xmatrix
-    x,t = xmatrix(filelist)  
+    x = xmatrix(filelist)  
+    
+    # Shuffle data
+    random.seed(a=seed)
+    x = np.asarray(random.sample(x,len(x)))
     # Find index at which we segment our data    
-    testchunk = int(len(x)*segment)
+    segindex = int(len(x)*segment)
+    
     # Segment our data    
-    x_train = x[:testchunk,:]
-    x_test = x[testchunk:,:]
-    t_train = t[:testchunk,:]
-    t_test = t[testchunk:,:]
+    # Grab X values. Column 3 to the end of the table
+    x_train = x[:segindex,3:]
+    x_test = x[segindex:,3:]
+    # T values are only in column 1
+    t_train = x[:segindex,1]
+    t_test = x[segindex:,1]
+    # Reshape t to proper array
+    t_train = np.reshape(t_train,(len(t_train),1))
+    t_test = np.reshape(t_test,(len(t_test),1))
     
 #    matrix_names = ['x_train','t_train','x_test','t_test']
     
     # Choose the data features we examine
-    # Cut out two columns since we aren't using the FSR 5,6 Data
+    # Currently we ignore the 6 FSR values as well as raw accelerometer and gyro data.
     x_train = np.delete(x_train,range(4,16),1)
     x_test = np.delete(x_test,range(4,16),1)
 
