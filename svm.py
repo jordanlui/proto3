@@ -19,6 +19,7 @@ import datetime
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
 path ='../Data/proto4/1'
+#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv'
@@ -152,13 +153,25 @@ def model(seed,segment,plotbool):
     
     # Segment into training and testing list
     # Probably want to update and simplify the method for the data segmentation
-    file_train = filelist[:numfiles-int(segment * numfiles)]
-    file_test = filelist[-int(segment * numfiles):]
+#    file_train = filelist[:numfiles-int(segment * numfiles)]
+#    file_test = filelist[-int(segment * numfiles):]
+#    
+#    # Generate x_train and x_test matrices
+#    # This (archaic) method will read through the files and build out into arrays. Try to improve with a bulk load and shuffle
+#    x_train,t_train = xmatrix(file_train)
+#    x_test,t_test = xmatrix(file_test)
     
-    # Generate x_train and x_test matrices
-    # This (archaic) method will read through the files and build out into arrays. Try to improve with a bulk load and shuffle
-    x_train,t_train = xmatrix(file_train)
-    x_test,t_test = xmatrix(file_test)
+    # New method
+    # Load data into xmatrix
+    x,t = xmatrix(filelist)  
+    # Find index at which we segment our data    
+    testchunk = int(len(x)*segment)
+    # Segment our data    
+    x_train = x[:testchunk,:]
+    x_test = x[testchunk:,:]
+    t_train = t[:testchunk,:]
+    t_test = t[testchunk:,:]
+    
 #    matrix_names = ['x_train','t_train','x_test','t_test']
     
     # Choose the data features we examine
