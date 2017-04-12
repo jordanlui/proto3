@@ -55,9 +55,14 @@ numfiles = len(filelist)
 
 # Import the file
 x,patient,gesture,trial,nancount  = xmatrix(filelist)  
+# Make the big x matrix
+xx = np.hstack((patient,gesture,trial,x))
 
 # Save to CSV File so we can use it later
 np.savetxt("x.csv",x,delimiter=",")
+np.savetxt("xx.csv",xx,delimiter=",")
 np.savetxt("patient.csv",patient,delimiter=",")
 np.savetxt("gesture.csv",gesture,delimiter=",")
 np.savetxt("trial.csv",trial,delimiter=",")
+
+

@@ -22,7 +22,7 @@ from xmatrix import xmatrix
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
 path ='../Data/proto4/'
-paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
+#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv'
@@ -41,24 +41,12 @@ global x_train, x_test, nancount
 
 # Run Parameters
 cvalue = 2e-3
-seedrange = 5 # Number of random seeds we will try
+seedrange = 3 # Number of random seeds we will try
 segment = 0.30 # Percentage of data that we test on
 plotbool=1 # Flag for plotting on or off
 seed = 1
 singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 nancount = 0
-
-## Generate the filelist
-# Read file list from directory for a single directory run 
-filelist = glob.glob(os.path.join(path,'*.csv'))
-
-
-# Alternatively we may have multiple directories
-filelist = []
-for path in paths:
-    filelist.extend(glob.glob(os.path.join(path,'*.csv')))
-
-numfiles = len(filelist)
 
 # Functions
 
@@ -115,40 +103,23 @@ def model(seed,segment,plotbool,x):
     # Model that performs our analysis and generates confusion matrix
     # Get our global variables
     global filelist, numfiles, accuracy, conf, confnorm, x_train, x_test, nancount
-#    random.seed(a=seed)
-    # Shuffle the filelist according to the seed
-    
-    
-    # Segment into training and testing list
-    # Probably want to update and simplify the method for the data segmentation
-#    file_train = filelist[:numfiles-int(segment * numfiles)]
-#    file_test = filelist[-int(segment * numfiles):]
-#    
-#    # Generate x_train and x_test matrices
-#    # This (archaic) method will read through the files and build out into arrays. Try to improve with a bulk load and shuffle
-#    x_train,t_train = xmatrix(file_train)
-#    x_test,t_test = xmatrix(file_test)
     
     # New method
     # Load data into xmatrix
 
     # Find index at which we segment our data    
     segindex = int(len(x)*segment)
-    
-    # Try to normalize in place instead of using the function
-    #    x[:,3:] = (x[:,3:] - x[:,3:].mean()) / (x[:,3:].max() - x[:,3:].min())
-    
+
     # Segment our data    
-    # Grab X values. Column 3 to the end of the table
+    # Grab X values. 
     x_train = x[:segindex,3:]
     x_test = x[segindex:,3:]
-    # T values are only in column 1
+    # Segment T values 
     t_train = x[:segindex,1]
     t_test = x[segindex:,1]
     # Reshape t to proper array
     t_train = np.reshape(t_train,(len(t_train),1))
     t_test = np.reshape(t_test,(len(t_test),1))
-    
     
     
     #    matrix_names = ['x_train','t_train','x_test','t_test']
@@ -158,18 +129,7 @@ def model(seed,segment,plotbool,x):
     x_train = np.delete(x_train,range(4,16),1)
     x_test = np.delete(x_test,range(4,16),1)
     
-
-
-    # Data preprocessing
-    # Normalize the data
-#    print "shape of train is", x_train.shape
-#    print "shape of test is", x_test.shape
-#    print "train max is %d and min is %d. Mean %d" %(np.max(x_train), np.min(x_train), np.mean(x_train))
-#    print 'number of nan found in train is', len(np.argwhere(np.isnan(x_train)))
-#    print 'number of nan found in test is', len(np.argwhere(np.isnan(x_test)))
-#    x_train,x_test = normtraintest(x_train,x_test)
-    
-    # Try to normalize here
+    # Normalize our data
     normmean = np.mean(x_train,axis=0)
     normstdev = np.std(x_train,axis=0)
     x_test = (x_test - normmean) / normstdev
@@ -177,7 +137,6 @@ def model(seed,segment,plotbool,x):
     # x_test = (x_test - np.mean(x_train,axis=0)) / (np.max(x_train,axis=0) - np.mean(x_train,axis=0))
     # x_train = (x_train - np.mean(x_train,axis=0)) / (np.max(x_train,axis=0) - np.mean(x_train,axis=0))
     
-#    print "After we normalize, train max is %d and min is %d" %(np.max(x_train), np.min(x_train))
     # Create SVM Model
     #lin_clf = svm.SVC(kernel='linear')
     lin_clf = svm.SVC(kernel='rbf')
@@ -224,13 +183,22 @@ def model(seed,segment,plotbool,x):
 #        segment = segment/10
 
 # Version of code for looping through various seed values    
+x = np.genfromtxt(os.path.join(path,"xx.csv"),delimiter=',')
+#patient = np.genfromtxt(os.path.join(path,"patient.csv"),delimiter=',')
+#t = np.genfromtxt(os.path.join(path,"gesture.csv"),delimiter=',')
+#trial = np.genfromtxt(os.path.join(path,"trial.csv"),delimiter=',')
+
+
+# join x together for the shuffle
+
+
 if singlerun == 1:
     # Execute a single run
     # Single run Version of code
 #    random.seed(a=seed)
 #    filelist = random.sample(filelist,numfiles)
     print 'seed is',seed
-    x = xmatrix(filelist)  
+#    x = xmatrix(filelist)  
     # Shuffle data
     random.seed(a=seed)
     x = np.asarray(random.sample(x,len(x)))
@@ -245,7 +213,7 @@ else:
     ac2 = [] 
     
     # Load our data into X matrix
-    x = xmatrix(filelist)  
+#    x = xmatrix(filelist)  
     
     
     for seed in range(0,seedrange+1):
@@ -281,7 +249,6 @@ text_file = open(os.path.join(output_dir,"log.txt"), "a")
 text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
 text_file.close()
     
-
     
 #if __name__ == '__main__':
 #    main()
