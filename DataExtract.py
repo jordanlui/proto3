@@ -6,44 +6,52 @@ Created on Sun Nov 27 13:22:19 2016
 """
 # Read all of the CSV files in the directory and extract the min, max, and average value per trial on two axis and outputs
 
-import glob, os, csv
+# Libraries
+from __future__ import division
 import numpy as np
-import re
+#from sklearn import neighbors, datasets
+from sklearn import svm
+from sklearn import preprocessing
+from sklearn.metrics import confusion_matrix
+import glob, os, csv, random, re, sys
+import operator
+import datetime
 
-path ='../Data/dec6_1'
-output_path = '../Analysis/'
-output_file = 'dec6.csv'
+# Import our custom functions
+from plot_confusion_matrix import plot_confusion_matrix
+from xmatrix import xmatrix
 
-filelist = glob.glob(os.path.join(path,'*.csv'))
+# File paths for accessing data
+#path ='../Data/proto3_combined/'
+path ='../Data/proto4/1'
+paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
+output_dir = '../Analysis/'
+output_file = 'proto4_analysis.csv'
+output_path = os.path.join(output_dir,output_file)
 
+global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
+global x_train, x_test, nancount
 
-with open(os.path.join(output_path,output_file),'wb') as outputfile:
-    writer = csv.writer(outputfile)
-#    Write our header row
-    writer.writerow(['patient','gesture','trial','min1','max1','mean1','min2','max2','mean2'])
-    for filename in filelist:
-    #    Open the file
-       print filename
-       f = open(filename,'r')
-       
-       data = np.genfromtxt(filename,delimiter=',')
-       while True:
-           try:
-               min1 = np.nanmin(data[:,0],axis=0)
-               max1 = np.nanmax(data[:,0],axis=0)
-               mean1 = np.nanmean(data[:,0],axis=0)
-               min2 = np.nanmin(data[:,1],axis=0)
-               max2 = np.nanmax(data[:,1],axis=0)
-               mean2 = np.nanmean(data[:,1],axis=0)
-               trial_info = re.findall('\[([0-9]{1,2})\]',string)
-               patient = trial_info[0]
-               gesture = trial_info[1]
-               trial = trial_info[2]
-               mylist = [patient,gesture,trial,min1,max1,mean1,min2,max2,mean2]
-               writer.writerow(mylist)
-               break
-           except:
-               break
-          
+# Initial variables
+#nancount = 0
 
-   
+# Functions
+def genfilelist(path):
+    filelist = []    
+    if isinstance(path,(str,unicode))  == True:
+        # Then we hav a single path to generate files
+        filelist = glob.glob(os.path.join(path,'*.csv'))
+    else:
+        # we should have a list or tuple of folder paths
+        for path in paths:
+            filelist.extend(glob.glob(os.path.join(path,'*.csv')))
+    return filelist
+
+# Main code
+# Generate File list
+
+filelist = genfilelist(paths)
+numfiles = len(filelist)
+
+# Import the file
+x,nancount  = xmatrix(filelist)  

@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 12 14:19:25 2017
-
 @author: Jordan
 """
 
+import numpy as np
+import re
+
+x = []
+t = []
+global nancount
+nancount = 0
 
 def xmatrix(files):
     # Accepts a list of files, extracts each row, builds x matrix and t matrix.
@@ -15,6 +21,7 @@ def xmatrix(files):
     x = []
     t = []
     global nancount
+    nancount = 0
     # Following executes if we have a single file
     if isinstance(files,str) == True:
         # Then just load the single file and output to x and t
@@ -46,7 +53,7 @@ def xmatrix(files):
             for row in data:
                 # Use if loop to check for valid row data, ignoring ragged data
                 if np.isnan(row).any() == True:
-                    print "nan found in file",file
+#                    print "nan found in file",file
                     nancount = nancount + 1
                 else:
                     newrow = np.concatenate((trial_info,row),axis=0)                    
@@ -57,4 +64,4 @@ def xmatrix(files):
 #    t = np.asarray(t)
 #    t = np.reshape(t,(len(t),1))
 
-    return x
+    return x, nancount
