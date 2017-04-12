@@ -54,4 +54,10 @@ filelist = genfilelist(paths)
 numfiles = len(filelist)
 
 # Import the file
-x,nancount  = xmatrix(filelist)  
+x,patient,gesture,trial,nancount  = xmatrix(filelist)  
+
+# Save to CSV File so we can use it later
+np.savetxt("x.csv",x,delimiter=",")
+np.savetxt("patient.csv",patient,delimiter=",")
+np.savetxt("gesture.csv",gesture,delimiter=",")
+np.savetxt("trial.csv",trial,delimiter=",")

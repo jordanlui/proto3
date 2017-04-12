@@ -12,6 +12,31 @@ t = []
 global nancount
 nancount = 0
 
+def loadfile(file):
+    tempfile = []
+    global nancount
+    data = np.genfromtxt(file,delimiter=',')
+            
+    # Remove the header row
+    data = data[1:,:]
+    # Use RegEx to get the gesture number
+    trial_info = re.findall('\[([0-9]{1,2})\]',file)
+    trial_info = np.asarray(trial_info)
+    trial_info = trial_info.astype(int)
+#            patient = int(trial_info[0])
+#    gesture = int(trial_info[1])
+#            trial = int(trial_info[2])
+    
+    # Loop through the data and save to an array
+    for row in data:
+        # Use if loop to check for valid row data, ignoring ragged data
+        if np.isnan(row).any() == True:
+#                    print "nan found in file",file
+            nancount = nancount + 1
+        else:
+            newrow = np.concatenate((trial_info,row),axis=0)                    
+            tempfile.append(newrow)
+
 def xmatrix(files):
     # Accepts a list of files, extracts each row, builds x matrix and t matrix.
     # Updating the file to export a file of following format:
@@ -19,7 +44,10 @@ def xmatrix(files):
     # Therefore files with MxN dimension will return a MxN+3 matrix
     
     x = []
-    t = []
+    patient = []
+    gesture = []
+    trial = []
+    
     global nancount
     nancount = 0
     # Following executes if we have a single file
@@ -37,8 +65,11 @@ def xmatrix(files):
         
         for file in files:
             # Load the data from csv file
+            # Alternate
+#            tempfile = loadfile(file)
+#            x.extend(tempfile)
+            # Original     
             data = np.genfromtxt(file,delimiter=',')
-            
             # Remove the header row
             data = data[1:,:]
             # Use RegEx to get the gesture number
@@ -46,7 +77,7 @@ def xmatrix(files):
             trial_info = np.asarray(trial_info)
             trial_info = trial_info.astype(int)
 #            patient = int(trial_info[0])
-            gesture = int(trial_info[1])
+#            gesture = int(trial_info[1])
 #            trial = int(trial_info[2])
             
             # Loop through the data and save to an array
@@ -56,12 +87,19 @@ def xmatrix(files):
 #                    print "nan found in file",file
                     nancount = nancount + 1
                 else:
-                    newrow = np.concatenate((trial_info,row),axis=0)                    
-                    x.append(newrow)
-#                    t.append(gesture)
+#                    newrow = np.concatenate((trial_info,row),axis=0)                    
+#                    x.append(newrow)
+                    x.append(row)
+                    patient.append(trial_info[0])
+                    gesture.append(trial_info[1])
+                    trial.append(trial_info[2])
     # Reformat as arrays
     x = np.asarray(x)
+    numrows = len(patient)
+    patient = np.reshape(patient,(numrows,1))
+    gesture = np.reshape(gesture,(numrows,1))
+    trial = np.reshape(trial,(numrows,1))
 #    t = np.asarray(t)
 #    t = np.reshape(t,(len(t),1))
 
-    return x, nancount
+    return x, patient, gesture, trial, nancount
