@@ -40,10 +40,10 @@ global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
 global x_train, x_test, nancount
 
 # Run Parameters
-cvalue = 2e-3
+#cvalue = 2e-3 # Pretty sure this isn't even referenced, at least for RBF kernel
 seedrange = 3 # Number of random seeds we will try
 segment = 0.30 # Percentage of data that we test on
-plotbool=1 # Flag for plotting on or off
+plotbool=0 # Flag for plotting on or off
 seed = 1
 singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 nancount = 0
@@ -190,64 +190,64 @@ x = np.genfromtxt(os.path.join(path,"xx.csv"),delimiter=',')
 
 
 # join x together for the shuffle
-
-
-if singlerun == 1:
-    # Execute a single run
-    # Single run Version of code
-#    random.seed(a=seed)
-#    filelist = random.sample(filelist,numfiles)
-    print 'seed is',seed
-#    x = xmatrix(filelist)  
-    # Shuffle data
-    random.seed(a=seed)
-    x = np.asarray(random.sample(x,len(x)))
-    accuracy, confnorm = model(seed,segment,plotbool,x)
-    
-#        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-    output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
-    print output_string
-else:
-    # Execute a looped run through many seed values
-    ac = []
-    ac2 = [] 
-    
-    # Load our data into X matrix
-#    x = xmatrix(filelist)  
-    
-    
-    for seed in range(0,seedrange+1):
-
-        #        random.seed(a=seed)
-        #        filelist = random.sample(filelist,numfiles)
+segmentrange = np.arange(0.75,0.95,0.05)
+for segment in segmentrange:
+    if singlerun == 1:
+        # Execute a single run
+        # Single run Version of code
+    #    random.seed(a=seed)
+    #    filelist = random.sample(filelist,numfiles)
+        print 'seed is',seed
+    #    x = xmatrix(filelist)  
         # Shuffle data
         random.seed(a=seed)
         x = np.asarray(random.sample(x,len(x)))
         accuracy, confnorm = model(seed,segment,plotbool,x)
-        ac.append(accuracy)
-        ac2.append(confnorm.diagonal())
-        print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
+        
+    #        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+        output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
+        print output_string
+    else:
+        # Execute a looped run through many seed values
+        ac = []
+        ac2 = [] 
+        
+        # Load our data into X matrix
+    #    x = xmatrix(filelist)  
+        
+        
+        for seed in range(0,seedrange+1):
     
-    # Stat Analysis of our results
-    ac_max = np.nanmax(ac)
-    ac_mean = np.nanmean(ac)
-    ac_min = np.nanmin(ac)
-    ac2 = np.asarray(ac2)
-    ac2_max = np.nanmax(ac2,axis=0)
-    ac2_mean = np.nanmean(ac2,axis=0)
-    ac2_min = np.nanmin(ac2,axis=0)
+            #        random.seed(a=seed)
+            #        filelist = random.sample(filelist,numfiles)
+            # Shuffle data
+            random.seed(a=seed)
+            x = np.asarray(random.sample(x,len(x)))
+            accuracy, confnorm = model(seed,segment,plotbool,x)
+            ac.append(accuracy)
+            ac2.append(confnorm.diagonal())
+            print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
+        
+        # Stat Analysis of our results
+        ac_max = np.nanmax(ac)
+        ac_mean = np.nanmean(ac)
+        ac_min = np.nanmin(ac)
+        ac2 = np.asarray(ac2)
+        ac2_max = np.nanmax(ac2,axis=0)
+        ac2_mean = np.nanmean(ac2,axis=0)
+        ac2_min = np.nanmin(ac2,axis=0)
+        
+        # Give a meaningful result summary
+        # Finx the trial that had the highest overall accuracy        
+        index, value = max(enumerate(ac),key=operator.itemgetter(1))
+        # Generate a statement to summarize our trials
+        output_string = 'Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+        print output_string
     
-    # Give a meaningful result summary
-    # Finx the trial that had the highest overall accuracy        
-    index, value = max(enumerate(ac),key=operator.itemgetter(1))
-    # Generate a statement to summarize our trials
-    output_string = 'Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-    print output_string
-
-# Print to a logfile
-text_file = open(os.path.join(output_dir,"log.txt"), "a")
-text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
-text_file.close()
+    # Print to a logfile
+    text_file = open(os.path.join(output_dir,"log.txt"), "a")
+    text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
+    text_file.close()
     
     
 #if __name__ == '__main__':
