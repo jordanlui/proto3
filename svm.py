@@ -21,17 +21,17 @@ from xmatrix import xmatrix
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto4/'
+path ='../Data/armpositions_feb28/clean'
 #paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
-output_file = 'proto4_analysis.csv'
+output_file = 'feb28_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 # Class names
-class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
+#class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
 #class_names = np.asarray(range(1,23))
 # Names from the 9 static arm position test are below
-#class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
+class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
 # Names from the old dynamic movement classification test
 #class_names = ['nominal flexion','affected flexion','upward','noise']
 
@@ -41,11 +41,11 @@ global x_train, x_test, nancount
 
 # Run Parameters
 #cvalue = 2e-3 # Pretty sure this isn't even referenced, at least for RBF kernel
-seedrange = 3 # Number of random seeds we will try
-segment = 0.30 # Percentage of data that we test on
-plotbool=0 # Flag for plotting on or off
+seedrange = 10 # Number of random seeds we will try
+segment = 0.80 # Percentage of data that we train on. Train on 0.8 means test on 0.2.
+plotbool=1 # Flag for plotting on or off
 seed = 1
-singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
+singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 nancount = 0
 
 # Functions
@@ -126,8 +126,8 @@ def model(seed,segment,plotbool,x):
     
     # Choose the data features we examine
     # Currently we ignore the 6 FSR values as well as raw accelerometer and gyro data.
-    x_train = np.delete(x_train,range(4,16),1)
-    x_test = np.delete(x_test,range(4,16),1)
+#    x_train = np.delete(x_train,range(4,16),1)
+#    x_test = np.delete(x_test,range(4,16),1)
     
     # Normalize our data
     normmean = np.mean(x_train,axis=0)
@@ -184,71 +184,74 @@ def model(seed,segment,plotbool,x):
 
 # Version of code for looping through various seed values    
 x = np.genfromtxt(os.path.join(path,"xx.csv"),delimiter=',')
+#x = np.delete(x,range(22,67),1) # should cut out all the omron data
+#x = np.delete(x,range(19,22),1) # Delete orientation sensors
+x = np.delete(x,range(16,19),1) # Deletes orientation data from Feb 28 data
+x = np.delete(x,range(4,17),1) # deletes the FSR, acc, gyro data (Feb 28 data set)
+#x = np.delete(x,range(3,6),1) # deletes Sharp IR
+
+
 #patient = np.genfromtxt(os.path.join(path,"patient.csv"),delimiter=',')
 #t = np.genfromtxt(os.path.join(path,"gesture.csv"),delimiter=',')
 #trial = np.genfromtxt(os.path.join(path,"trial.csv"),delimiter=',')
 
 
-# join x together for the shuffle
-segmentrange = np.arange(0.75,0.95,0.05)
-for segment in segmentrange:
-    if singlerun == 1:
-        # Execute a single run
-        # Single run Version of code
-    #    random.seed(a=seed)
-    #    filelist = random.sample(filelist,numfiles)
-        print 'seed is',seed
-    #    x = xmatrix(filelist)  
+
+#Segment variation
+#segmentrange = np.arange(0.001,0.01,0.001)
+#for segment in segmentrange:
+if singlerun == 1:
+    # Execute a single run
+    # Single run Version of code
+#    random.seed(a=seed)
+#    filelist = random.sample(filelist,numfiles)
+    print 'seed is',seed
+#    x = xmatrix(filelist)  
+    # Shuffle data
+    random.seed(a=seed)
+    x = np.asarray(random.sample(x,len(x)))
+    accuracy, confnorm = model(seed,segment,plotbool,x)
+    
+#        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
+    print output_string
+else:
+    # Execute a looped run through many seed values
+    ac = []
+    ac2 = [] 
+    
+    
+    for seed in range(0,seedrange+1):
+
+        #        random.seed(a=seed)
+        #        filelist = random.sample(filelist,numfiles)
         # Shuffle data
         random.seed(a=seed)
         x = np.asarray(random.sample(x,len(x)))
         accuracy, confnorm = model(seed,segment,plotbool,x)
-        
-    #        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-        output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
-        print output_string
-    else:
-        # Execute a looped run through many seed values
-        ac = []
-        ac2 = [] 
-        
-        # Load our data into X matrix
-    #    x = xmatrix(filelist)  
-        
-        
-        for seed in range(0,seedrange+1):
+        ac.append(accuracy)
+        ac2.append(confnorm.diagonal())
+        print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
     
-            #        random.seed(a=seed)
-            #        filelist = random.sample(filelist,numfiles)
-            # Shuffle data
-            random.seed(a=seed)
-            x = np.asarray(random.sample(x,len(x)))
-            accuracy, confnorm = model(seed,segment,plotbool,x)
-            ac.append(accuracy)
-            ac2.append(confnorm.diagonal())
-            print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
-        
-        # Stat Analysis of our results
-        ac_max = np.nanmax(ac)
-        ac_mean = np.nanmean(ac)
-        ac_min = np.nanmin(ac)
-        ac2 = np.asarray(ac2)
-        ac2_max = np.nanmax(ac2,axis=0)
-        ac2_mean = np.nanmean(ac2,axis=0)
-        ac2_min = np.nanmin(ac2,axis=0)
-        
-        # Give a meaningful result summary
-        # Finx the trial that had the highest overall accuracy        
-        index, value = max(enumerate(ac),key=operator.itemgetter(1))
-        # Generate a statement to summarize our trials
-        output_string = 'Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-        print output_string
+    # Stat Analysis of our results
+    ac_max = np.nanmax(ac)
+    ac_mean = np.nanmean(ac)
+    ac_min = np.nanmin(ac)
+    ac2 = np.asarray(ac2)
+    ac2_max = np.nanmax(ac2,axis=0)
+    ac2_mean = np.nanmean(ac2,axis=0)
+    ac2_min = np.nanmin(ac2,axis=0)
     
-    # Print to a logfile
-    text_file = open(os.path.join(output_dir,"log.txt"), "a")
-    text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
-    text_file.close()
+    # Give a meaningful result summary
+    # Finx the trial that had the highest overall accuracy        
+    index, value = max(enumerate(ac),key=operator.itemgetter(1))
+    # Generate a statement to summarize our trials
+    output_string = 'Data from %s. Cut Acc, Gyro, fsr. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    print output_string
+
+# Print to a logfile
+text_file = open(os.path.join(output_dir,"log.txt"), "a")
+text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
+text_file.close()
     
     
-#if __name__ == '__main__':
-#    main()

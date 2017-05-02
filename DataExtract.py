@@ -23,10 +23,10 @@ from xmatrix import xmatrix
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/proto4/1'
-paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
-output_dir = '../Analysis/'
-output_file = 'proto4_analysis.csv'
+path ='../Data/armpositions_feb28'
+#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
+output_dir = '../Analysis/feb28'
+output_file = 'feb28_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 
 global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
@@ -50,7 +50,7 @@ def genfilelist(path):
 # Main code
 # Generate File list
 
-filelist = genfilelist(paths)
+filelist = genfilelist(path)
 numfiles = len(filelist)
 
 # Import the file
