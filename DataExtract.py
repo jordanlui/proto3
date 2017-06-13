@@ -23,10 +23,10 @@ from xmatrix import xmatrix
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/armpositions_feb28'
+path ='../Data/armruler_feb24'
 #paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
-output_dir = '../Analysis/feb28'
-output_file = 'feb28_analysis.csv'
+output_dir = '../Analysis/feb24'
+output_file = 'feb24_analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 
 global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist

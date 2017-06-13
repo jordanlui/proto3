@@ -31,7 +31,8 @@ output_path = os.path.join(output_dir,output_file)
 #class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
 #class_names = np.asarray(range(1,23))
 # Names from the 9 static arm position test are below
-class_names = ['fwd 1.0','fwd 0.5','fwd 0','left 1.0','left 0.5','left 0','up 1.0','up 0.5','up 0']
+class_names = ['fwd 40','fwd 25','fwd 10','left 40','left 25','left 10','up 40','up 25','up 10']
+#class_names = ['65','60','55','50','45','40','35','30','25']
 # Names from the old dynamic movement classification test
 #class_names = ['nominal flexion','affected flexion','upward','noise']
 
@@ -186,7 +187,7 @@ def model(seed,segment,plotbool,x):
 x = np.genfromtxt(os.path.join(path,"xx.csv"),delimiter=',')
 #x = np.delete(x,range(22,67),1) # should cut out all the omron data
 #x = np.delete(x,range(19,22),1) # Delete orientation sensors
-x = np.delete(x,range(16,19),1) # Deletes orientation data from Feb 28 data
+#x = np.delete(x,range(16,19),1) # Deletes orientation data from Feb 28 data
 x = np.delete(x,range(4,17),1) # deletes the FSR, acc, gyro data (Feb 28 data set)
 #x = np.delete(x,range(3,6),1) # deletes Sharp IR
 
@@ -246,7 +247,7 @@ else:
     # Finx the trial that had the highest overall accuracy        
     index, value = max(enumerate(ac),key=operator.itemgetter(1))
     # Generate a statement to summarize our trials
-    output_string = 'Data from %s. Cut Acc, Gyro, fsr. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    output_string = 'Data from %s. Cut Acc, Gyro, fsr, orientation. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
     print output_string
 
 # Print to a logfile
