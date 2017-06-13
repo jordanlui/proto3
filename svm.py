@@ -21,11 +21,11 @@ from xmatrix import xmatrix
 
 # File paths for accessing data
 #path ='../Data/proto3_combined/'
-path ='../Data/armpositions_feb28/clean'
+path ='../Data/armpositions_feb28/clean' # Input file path
 #paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
 #path = '../Data/armruler_feb24'
 output_dir = '../Analysis/'
-output_file = 'feb28_analysis.csv'
+output_file = 'feb28_analysis.csv' # File where we summarize run results
 output_path = os.path.join(output_dir,output_file)
 # Class names
 #class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
@@ -44,7 +44,7 @@ global x_train, x_test, nancount
 #cvalue = 2e-3 # Pretty sure this isn't even referenced, at least for RBF kernel
 seedrange = 10 # Number of random seeds we will try
 segment = 0.80 # Percentage of data that we train on. Train on 0.8 means test on 0.2.
-plotbool=1 # Flag for plotting on or off
+plotbool=0 # Flag for plotting on or off
 seed = 1
 singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 nancount = 0
@@ -75,11 +75,6 @@ def normtraintest(train,test):
         # Data should be mean shifted and scaled to so all columns have equal stdev
         coltrain = (coltrain - mean)/std
         coltest = (coltest - mean)/std        
-        
-        # Scale the data
-        # For some reason the model runs even worse if we both standardize and scale data. figure this out later
-#        coltrain = (coltrain - colmin)/(colmax - colmin)
-#        coltest = (coltest - colmin)/(colmax - colmin)
                        
         # Put the values back into the matrix
         
@@ -92,16 +87,14 @@ def exportresults(filename,data):
     with open(filename,'ab') as csvfile:
         logwriter = csv.writer(csvfile,delimiter=',',quotechar='|',quoting=csv.QUOTE_MINIMAL)
         logwriter.writerow(data)
-#        filednames = ['']
-#        logwriter = csv.DictWriter(csvfile,fieldnames=filednames)
-#        if not file_exists:
-#            logwriter.writeheader()
-#        logwriter.writerow()
+
 def confusion_matrix_normalize(conf):
     conf = conf.astype('float') / conf.sum(axis=1)[:, np.newaxis]
     return conf
 def model(seed,segment,plotbool,x):
     # Model that performs our analysis and generates confusion matrix
+    # Currently accepts augmented x matrix which also contains the labels
+    # Latest test (May 2017) have 67 columns of data and 3 columns for labels
     # Get our global variables
     global filelist, numfiles, accuracy, conf, confnorm, x_train, x_test, nancount
     
@@ -185,18 +178,58 @@ def model(seed,segment,plotbool,x):
 
 # Version of code for looping through various seed values    
 x = np.genfromtxt(os.path.join(path,"xx.csv"),delimiter=',')
-#x = np.delete(x,range(22,67),1) # should cut out all the omron data
-#x = np.delete(x,range(19,22),1) # Delete orientation sensors
-#x = np.delete(x,range(16,19),1) # Deletes orientation data from Feb 28 data
-x = np.delete(x,range(4,17),1) # deletes the FSR, acc, gyro data (Feb 28 data set)
-#x = np.delete(x,range(3,6),1) # deletes Sharp IR
+xbackup = np.asarray(list(x))
+print 'initial size of x is' , x.shape
+# Masking and deletion of different columns for PCA
 
+# Make empty list that we'll store all masks in
+masks = []
 
-#patient = np.genfromtxt(os.path.join(path,"patient.csv"),delimiter=',')
-#t = np.genfromtxt(os.path.join(path,"gesture.csv"),delimiter=',')
-#trial = np.genfromtxt(os.path.join(path,"trial.csv"),delimiter=',')
+# Basic mask to remove FSR data
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(7,13)]] = False # Remove FSR
+masks.append(mask)
 
+# Close 8x1 Omron only
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,22)]] = False
+mask[30:]  = False
+masks.append(mask)
 
+# Close 16 Omron Only
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,30)]] = False
+mask[46:]  = False
+masks.append(mask)
+
+# Far 8x1 Omron Only
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,46)]] = False
+mask[54:]  = False
+masks.append(mask)
+
+# Far 16 Omron Only
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,54)]] = False
+masks.append(mask)
+
+# Orientation Only
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,19)]] = False
+mask[22:] = False
+masks.append(mask)
+
+# IR sensors only
+mask = np.ones(x.shape[1], dtype=bool)
+mask[7:] = False
+masks.append(mask)
+
+print 'resize x to', x.shape
+
+for singlemask in masks:
+    x = np.asarray(list(xbackup))
+    x = x[:,singlemask]
+    print x.shape
 
 #Segment variation
 #segmentrange = np.arange(0.001,0.01,0.001)
@@ -214,7 +247,7 @@ if singlerun == 1:
     accuracy, confnorm = model(seed,segment,plotbool,x)
     
 #        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-    output_string = 'Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
+    output_string = 'PCA. Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
     print output_string
 else:
     # Execute a looped run through many seed values
@@ -247,7 +280,7 @@ else:
     # Finx the trial that had the highest overall accuracy        
     index, value = max(enumerate(ac),key=operator.itemgetter(1))
     # Generate a statement to summarize our trials
-    output_string = 'Data from %s. Cut Acc, Gyro, fsr, orientation. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+    output_string = 'PCA. Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
     print output_string
 
 # Print to a logfile
