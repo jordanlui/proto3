@@ -3,6 +3,20 @@
 Created on Wed Dec 07 12:21:18 2016
 
 @author: Jordan
+SVM Code for analysis of IR Band research
+Jordan Lui 2017, MENRVA Lab, SFU
+
+June 2017:
+PCA analysis of different sensor groups:
+0 No FSR
+1 Omron 8 close
+2 Omron 16 close
+3 Omron 8 Far
+4 Omron 16 Far
+5 Orientation RPY
+6 IR Distance
+7 Accelerometer
+
 """
 # Libraries
 from __future__ import division
@@ -20,21 +34,18 @@ from plot_confusion_matrix import plot_confusion_matrix
 from xmatrix import xmatrix
 
 # File paths for accessing data
-#path ='../Data/proto3_combined/'
-path ='../Data/armpositions_feb28/clean' # Input file path
-#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',]
-#path = '../Data/armruler_feb24'
+path ='../Data/proto4/' # Input file path
+# For individual analysis
+#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',] 
 output_dir = '../Analysis/'
-output_file = 'feb28_analysis.csv' # File where we summarize run results
+output_file = 'proto4_analysis.csv' # File where we summarize run results
 output_path = os.path.join(output_dir,output_file)
 # Class names
-#class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
-#class_names = np.asarray(range(1,23))
-# Names from the 9 static arm position test are below
-class_names = ['fwd 40','fwd 25','fwd 10','left 40','left 25','left 10','up 40','up 25','up 10']
-#class_names = ['65','60','55','50','45','40','35','30','25']
-# Names from the old dynamic movement classification test
-#class_names = ['nominal flexion','affected flexion','upward','noise']
+class_names  = [15,20,25,30,35,40,45,50,55,60,'L1','L2','L3','R1','R2','R3','U1','U2','U3','D1','D2','D3']
+
+# Names from the 9 static arm position test are below (Feb 2017)
+#class_names = ['fwd 40','fwd 25','fwd 10','left 40','left 25','left 10','up 40','up 25','up 10']
+
 
 # Declare globals here if we remove the main loop
 global ac, ac2, index, value, seed, accuracy, conf, confnorm, filelist
@@ -46,7 +57,7 @@ seedrange = 10 # Number of random seeds we will try
 segment = 0.80 # Percentage of data that we train on. Train on 0.8 means test on 0.2.
 plotbool=0 # Flag for plotting on or off
 seed = 1
-singlerun = 1 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
+singlerun = 0 # Flag for signaling that we are doing a single randomized evaluation. 1 is a single run.
 nancount = 0
 
 # Functions
@@ -224,68 +235,81 @@ mask = np.ones(x.shape[1], dtype=bool)
 mask[7:] = False
 masks.append(mask)
 
+# Accelerometer
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,13)]] = False
+mask[16:] = False
+masks.append(mask)
+
 print 'resize x to', x.shape
 
+# PCA Analysis loop
+acc_pca = []
 for singlemask in masks:
     x = np.asarray(list(xbackup))
     x = x[:,singlemask]
     print x.shape
 
-#Segment variation
-#segmentrange = np.arange(0.001,0.01,0.001)
-#for segment in segmentrange:
-if singlerun == 1:
-    # Execute a single run
-    # Single run Version of code
-#    random.seed(a=seed)
-#    filelist = random.sample(filelist,numfiles)
-    print 'seed is',seed
-#    x = xmatrix(filelist)  
-    # Shuffle data
-    random.seed(a=seed)
-    x = np.asarray(random.sample(x,len(x)))
-    accuracy, confnorm = model(seed,segment,plotbool,x)
-    
-#        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-    output_string = 'PCA. Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
-    print output_string
-else:
-    # Execute a looped run through many seed values
-    ac = []
-    ac2 = [] 
-    
-    
-    for seed in range(0,seedrange+1):
-
-        #        random.seed(a=seed)
-        #        filelist = random.sample(filelist,numfiles)
+    #Segment variation
+    #segmentrange = np.arange(0.001,0.01,0.001)
+    #for segment in segmentrange:
+    if singlerun == 1:
+        # Execute a single run
+        # Single run Version of code
+    #    random.seed(a=seed)
+    #    filelist = random.sample(filelist,numfiles)
+        print 'seed is',seed
+    #    x = xmatrix(filelist)  
         # Shuffle data
         random.seed(a=seed)
         x = np.asarray(random.sample(x,len(x)))
         accuracy, confnorm = model(seed,segment,plotbool,x)
-        ac.append(accuracy)
-        ac2.append(confnorm.diagonal())
-        print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
+        acc_pca.append(accuracy)
+        
+    #        output_string = 'In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+        output_string = 'PCA. Accuracy %.2f. Seed %s. Data from %s' %(accuracy,str(seed),path)
+        print output_string
+    else:
+        # Execute a looped run through many seed values
+        ac = []
+        ac2 = [] 
+        
+        
+        for seed in range(0,seedrange+1):
     
-    # Stat Analysis of our results
-    ac_max = np.nanmax(ac)
-    ac_mean = np.nanmean(ac)
-    ac_min = np.nanmin(ac)
-    ac2 = np.asarray(ac2)
-    ac2_max = np.nanmax(ac2,axis=0)
-    ac2_mean = np.nanmean(ac2,axis=0)
-    ac2_min = np.nanmin(ac2,axis=0)
+            #        random.seed(a=seed)
+            #        filelist = random.sample(filelist,numfiles)
+            # Shuffle data
+            random.seed(a=seed)
+            x = np.asarray(random.sample(x,len(x)))
+            accuracy, confnorm = model(seed,segment,plotbool,x)
+            ac.append(accuracy)
+            ac2.append(confnorm.diagonal())
+            print 'Seed %d of %d, acc=%.2f'%(seed,seedrange,accuracy)
+        
+        # Stat Analysis of our results
+        # Calculate main max, mean, min accuracy levels
+        ac_max = np.nanmax(ac)
+        ac_mean = np.nanmean(ac)
+        ac_min = np.nanmin(ac)
+        # Append this mean accuracy to a list for analysis after
+        acc_pca.append(ac_mean)
+        # ac2 objects are the diagonals of the confusion matrix
+        ac2 = np.asarray(ac2)
+        ac2_max = np.nanmax(ac2,axis=0)
+        ac2_mean = np.nanmean(ac2,axis=0)
+        ac2_min = np.nanmin(ac2,axis=0)
+        
+        # Give a meaningful result summary
+        # Finx the trial that had the highest overall accuracy        
+        index, value = max(enumerate(ac),key=operator.itemgetter(1))
+        # Generate a statement to summarize our trials
+        output_string = 'PCA. Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
+        print output_string
     
-    # Give a meaningful result summary
-    # Finx the trial that had the highest overall accuracy        
-    index, value = max(enumerate(ac),key=operator.itemgetter(1))
-    # Generate a statement to summarize our trials
-    output_string = 'PCA. Data from %s. In %d randomizations, %d from seed %d has highest overall accuracy. Mean %d, min%d, stdev %d Individual accuracies for this seed are %s. Highest individuals are %s. Mean is %s Segment %.2f' %(path, seedrange,value,index,ac_mean,ac_min,np.std(ac),str(ac2[index,:]),str(ac2_max),str(ac2_mean),segment)
-    print output_string
-
-# Print to a logfile
-text_file = open(os.path.join(output_dir,"log.txt"), "a")
-text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
-text_file.close()
+    # Print to a logfile
+    text_file = open(os.path.join(output_dir,"log.txt"), "a")
+    text_file.write(str(datetime.datetime.now())+" "+output_string+"\n")
+    text_file.close()
     
     
