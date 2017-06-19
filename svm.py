@@ -16,6 +16,8 @@ PCA analysis of different sensor groups:
 5 Orientation RPY
 6 IR Distance
 7 Accelerometer
+8 Omron 16-1, IR1&2, IMU
+9 Omron 16-1, 16-2, IR1234, IMU
 
 """
 # Libraries
@@ -195,6 +197,7 @@ print 'initial size of x is' , x.shape
 
 # Make empty list that we'll store all masks in
 masks = []
+# Anything True is kept. False will be deleted
 
 # Basic mask to remove FSR data
 mask = np.ones(x.shape[1], dtype=bool)
@@ -241,11 +244,31 @@ mask[[range(3,13)]] = False
 mask[16:] = False
 masks.append(mask)
 
+# Omron 16-2, IR Long1, Short1, IMU
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(5,19)]] = False
+mask[[range(22,54)]] = False
+masks.append(mask)
+
+# Omron 16-1, 16-2, IR (all), IMU
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(7,19)]] = False
+mask[[range(22,30)]] = False
+mask[[range(46,54)]] = False
+masks.append(mask)
+
+# Omron 16-1 and IMU (no Active IR)
+mask = np.ones(x.shape[1], dtype=bool)
+mask[[range(3,19)]] = False
+mask[[range(22,54)]] = False
+masks.append(mask)
+
+
 print 'resize x to', x.shape
 
 # PCA Analysis loop
 acc_pca = []
-for singlemask in masks:
+for singlemask in masks[-1:]: # Can decide which specific masks to run
     x = np.asarray(list(xbackup))
     x = x[:,singlemask]
     print x.shape
