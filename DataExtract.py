@@ -4,6 +4,8 @@ Created on Sun Nov 27 13:22:19 2016
 
 Creates x matrix from CSV files.
 
+Updagint July 2017 to make it easier to re configure
+
 @author: Jordan
 """
 # Read all of the CSV files in the directory and extract the min, max, and average value per trial on two axis and outputs
