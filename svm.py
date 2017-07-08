@@ -19,26 +19,28 @@ PCA analysis of different sensor groups:
 8 Omron 16-1, IR1&2, IMU
 9 Omron 16-1, 16-2, IR1234, IMU
 
+June / July 2017 data
+Now we have x and y coord data from webcam
+Format: # [patient, class, trial, x-coord, y-coord, DistIR, RPY, Omron Sensors]
+
 """
 # Libraries
 from __future__ import division
 import numpy as np
 #from sklearn import neighbors, datasets
 from sklearn import svm
-from sklearn import preprocessing
+#from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix
-import glob, os, csv, random, re, sys
+import os, csv, random
 import operator
 import datetime
 
 # Import our custom functions
 from plot_confusion_matrix import plot_confusion_matrix
-from xmatrix import xmatrix
+#from xmatrix import xmatrix
 
 # File paths for accessing data
 path ='../Data/proto4/' # Input file path
-# For individual analysis
-#paths = ['../Data/proto4/1','../Data/proto4/2','../Data/proto4/3','../Data/proto4/4','../Data/proto4/5',] 
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv' # File where we summarize run results
 output_path = os.path.join(output_dir,output_file)
