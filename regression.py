@@ -26,7 +26,11 @@ def randomize_data(x,seed):
     random.seed(a=seed)
     x = np.asarray(random.sample(x,len(x)))
     return x
-
+def split_xt(xin):
+    # Split data into xmatrix and t columns
+    t = xin[:,3:5]
+    x = xin[:,6:]
+    return x,t
 def segment_data(x,seg_index):
     # Segment data based on chosen train/test segmentation
 
@@ -35,11 +39,12 @@ def segment_data(x,seg_index):
     #t_test =  np.reshape(x[seg_index:,5],(m-seg_index,1))
 
     # t value based on actual x y coord
-    t_train = x[:seg_index,3:5]
-    t_test = x[seg_index:,3:5]
+    x,t = split_xt(x) # Split into the given columns x and t
+    t_train = t[:seg_index,:]
+    t_test = t[seg_index:,:]
     
-    x_train = x[:seg_index,6:]
-    x_test =  x[seg_index:,6:]
+    x_train = x[:seg_index,:]
+    x_test =  x[seg_index:,:]
     return x_train, x_test, t_train, t_test
     
 def prep_model(x,seg_index,seed):
@@ -62,46 +67,80 @@ def model(x_train, x_test, t_train, t_test,segment,seed):
     MSE = np.mean((regr.predict(x_test) - t_test) **2)
     variance = regr.score(x_test,t_test)
     return MSE, variance
+def model_multi(x_train,x_test,t_train,t_test,seed):
+    # This function runs the model repeatedly based on number of random seeds and return the average MSE values and variances
+    MSE = []
+    variance = []
+    for seed in seeds:
+#        x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
+        error, var = model(x_train, x_test, t_train, t_test,segment,seed)
+        MSE.append(error)
+        variance.append(var)
+
+    MSE_mean = np.mean(MSE)
+    variance_mean = np.mean(variance)
+    # Coefficients
+    #print('Coefficients: \n', regr.coef_)
+    ## MSE
+#    print 'Ran ',len(seeds),' randomizations'
+#    print("MSE: %.2f" % MSE_mean)
+#    print('Variance score: %.2f' %variance_mean)
+    return MSE_mean, variance_mean
     
-#def model2(x_train,x_test,t_train,t_test,segment,seed):
-#    # Crude version where we duplicate model for simple input
 #%% Prepare
 path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
-x = []
-xx = []
-for apath in path:
-    x_temp, xx_temp = load(path = apath)
-    x.append(x_temp)
-    xx.append(xx_temp)
-
-#x,xx = load(path = '../Data/june23/analysis/1415/') # Load Data
-x = np.vstack(x)
-m = len(x)
+#x = []
+#xx = []
+#for apath in path:
+#    x_temp, xx_temp = load(path = apath)
+#    x.append(x_temp)
+#    xx.append(xx_temp)
+#
+##x,xx = load(path = '../Data/june23/analysis/1415/') # Load Data
+#x = np.vstack(x)
+#m = len(x)
 seg_index = int(segment * len(x))
 
+#%% Practice LOO model
+# LOO = Leave one out. Train on 6 folders while testing on the last folder. Iterate through combinations 
 
 
+#t_train=[]
+#t_test=[]
+error = []
+var = []
 
-
-#%% Run the model
-MSE = []
-variance = []
-for seed in seeds:
-    x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
-    error, var = model(x_train, x_test, t_train, t_test,segment,seed)
-    MSE.append(error)
-    variance.append(var)
+for i in range(0,len(path)):
+    x_train=[]
+    x_test=[]
     
-# July 9 - Train on one recording and test on separate. Or at least separate files in same folder
+    single_path = path[i] # Single path
+    rest_path = path[:i]+path[i+1:] # Rest of paths
     
+    x_test = load(path=single_path) # Load into x matrix
+    x_test,t_test = split_xt(x_test[0]) # Split to x and t
 
-#%% Do analysis on results
+    
+    for apath in rest_path:
+        xx_train = load(path=apath)
+        x_train.append(xx_train[0])
+  
+    x_train = np.vstack(x_train)
+    x_train,t_train = split_xt(x_train)
+#    print 'i is',i
+#    print 'given path is ' ,path[i]
+#    print 'remainders are', path[:i]+path[i+1:]
+#    print '\n'
+    
+    # Run the model
+    MSE_mean, variance_mean = model_multi(x_train,x_test,t_train,t_test,seed)
+    error.append(MSE_mean)
+    var.append(variance_mean)
+    
+    
+# Results
+print 'Number of random shuffles:',len(seeds)
+print 'Number of folder iterations',len(path)
+print 'Variances: ', var
+print 'MSE:', error
 
-MSE_mean = np.mean(MSE)
-variance_mean = np.mean(variance)
-# Coefficients
-#print('Coefficients: \n', regr.coef_)
-## MSE
-print 'Ran ',len(seeds),' randomizations'
-print("MSE: %.2f" % MSE_mean)
-print('Variance score: %.2f' %variance_mean)
