@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 #%% Parameters
 segment = 0.80 # Section of data that we train on
 seed = 0
-seeds = range(0,25)
+number_randomize = 5 # Number of times we want to random shuffle
+seeds = range(0,number_randomize)
 
 #%% Functions
 def randomize_data(x,seed):
@@ -41,26 +42,44 @@ def segment_data(x,seg_index):
     x_test =  x[seg_index:,6:]
     return x_train, x_test, t_train, t_test
     
-def model(x,segment,seed):
+def prep_model(x,seg_index,seed):
+    # Shuffle and split data as desired in a full mix scenario
+    # Don't use this when doing LOO shuffle based on folders!
+
+    x = randomize_data(x,seed) # Shuffle the data
+    x_train, x_test, t_train, t_test = segment_data(x,seg_index) # Split into test and train
+    return x_train, x_test, t_train, t_test
+def model(x_train, x_test, t_train, t_test,segment,seed):
     # Run the analysis
     # Inputs: x, segment, random seeds
     # Output: MSE Error Value, Variance score
-    x = randomize_data(x,seed)
+#    seg_index = int(segment * len(x))
+#    x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed) # Shuffle, segment data
     
-    x_train, x_test, t_train, t_test = segment_data(x,seg_index)
-    
-    regr = linear_model.LinearRegression(normalize=True)
-    regr.fit(x_train, t_train)
+    regr = linear_model.LinearRegression(normalize=True) # Build model
+    regr.fit(x_train, t_train)  # Fit model
     
     MSE = np.mean((regr.predict(x_test) - t_test) **2)
     variance = regr.score(x_test,t_test)
     return MSE, variance
     
-
+#def model2(x_train,x_test,t_train,t_test,segment,seed):
+#    # Crude version where we duplicate model for simple input
 #%% Prepare
-x,xx = load() # Load Data
+path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
+x = []
+xx = []
+for apath in path:
+    x_temp, xx_temp = load(path = apath)
+    x.append(x_temp)
+    xx.append(xx_temp)
+
+#x,xx = load(path = '../Data/june23/analysis/1415/') # Load Data
+x = np.vstack(x)
 m = len(x)
 seg_index = int(segment * len(x))
+
+
 
 
 
@@ -68,13 +87,15 @@ seg_index = int(segment * len(x))
 MSE = []
 variance = []
 for seed in seeds:
-    error, var = model(x,segment,seed)
+    x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
+    error, var = model(x_train, x_test, t_train, t_test,segment,seed)
     MSE.append(error)
     variance.append(var)
     
+# July 9 - Train on one recording and test on separate. Or at least separate files in same folder
+    
 
-
-#%% Do analysis
+#%% Do analysis on results
 
 MSE_mean = np.mean(MSE)
 variance_mean = np.mean(variance)
