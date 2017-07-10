@@ -64,7 +64,10 @@ def model(x_train, x_test, t_train, t_test,segment,seed):
     regr = linear_model.LinearRegression(normalize=True) # Build model
     regr.fit(x_train, t_train)  # Fit model
     
-    MSE = np.mean((regr.predict(x_test) - t_test) **2)
+#    MSE = np.mean((regr.predict(x_test) - t_test) **2)
+    
+    # Do error as euclidean
+    MSE = np.mean(np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)))
     variance = regr.score(x_test,t_test)
     return MSE, variance
 def model_multi(x_train,x_test,t_train,t_test,seed):
@@ -99,7 +102,7 @@ path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/jun
 ##x,xx = load(path = '../Data/june23/analysis/1415/') # Load Data
 #x = np.vstack(x)
 #m = len(x)
-seg_index = int(segment * len(x))
+#seg_index = int(segment * len(x))
 
 #%% Practice LOO model
 # LOO = Leave one out. Train on 6 folders while testing on the last folder. Iterate through combinations 
