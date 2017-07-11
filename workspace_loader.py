@@ -16,5 +16,12 @@ def load(path = '../Data/june23/analysis/'):
 #    path = '../Data/june23/analysis/'
     
     x = np.genfromtxt(path+'x.csv',delimiter=',') # Load x matrix
+#    xx = np.genfromtxt(path+'xx.csv',delimiter=',') # Load xx matrix (contains patient,class,trial,data)
+    return x
+def load2(path = '../Data/june23/analysis/'):
+    # Load data, including the xx matrix
+#    path = '../Data/june23/analysis/'
+    
+    x = np.genfromtxt(path+'x.csv',delimiter=',') # Load x matrix
     xx = np.genfromtxt(path+'xx.csv',delimiter=',') # Load xx matrix (contains patient,class,trial,data)
     return x,xx

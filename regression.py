@@ -7,7 +7,7 @@ July analysis
 
 Scratch pad for analysis
 """
-
+from __future__ import division
 from  workspace_loader import load
 from sklearn import datasets, linear_model
 import numpy as np
@@ -19,6 +19,7 @@ segment = 0.80 # Section of data that we train on
 seed = 0
 number_randomize = 2 # Number of times we want to random shuffle
 seeds = range(0,number_randomize)
+scale_table = 428/500 # Table scaling in pixels/mm
 
 #%% Functions
 def randomize_data(x,seed):
@@ -54,7 +55,7 @@ def prep_model(x,seg_index,seed):
     x = randomize_data(x,seed) # Shuffle the data
     x_train, x_test, t_train, t_test = segment_data(x,seg_index) # Split into test and train
     return x_train, x_test, t_train, t_test
-def model(x_train, x_test, t_train, t_test,segment,seed):
+def model(x_train, x_test, t_train, t_test,seed):
     # Run the analysis
     # Inputs: x, segment, random seeds
     # Output: MSE Error Value, Variance score
@@ -67,17 +68,17 @@ def model(x_train, x_test, t_train, t_test,segment,seed):
 #    MSE = np.mean((regr.predict(x_test) - t_test) **2)
     
     # Do error as euclidean
-    diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1))
-    MSE = np.mean(np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)))
+    diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)) # Euclidean error
+    MSE = np.mean(diff) # Mean error
     variance = regr.score(x_test,t_test)
-    return MSE, variance
+    return MSE, variance, diff
 def model_multi(x_train,x_test,t_train,t_test,seed):
     # This function runs the model repeatedly based on number of random seeds and return the average MSE values and variances
     MSE = []
     variance = []
     for seed in seeds:
 #        x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
-        error, var = model(x_train, x_test, t_train, t_test,segment,seed)
+        error, var, diff = model(x_train, x_test, t_train, t_test,seed)
         MSE.append(error)
         variance.append(var)
 
@@ -104,19 +105,19 @@ def LOOCV(path):
         rest_path = path[:i]+path[i+1:] # Rest of paths
         
         x_test = load(path=single_path) # Load into x matrix
-        x_test,t_test = split_xt(x_test[0]) # Split to x and t
+        x_test,t_test = split_xt(x_test) # Split to x and t
     
         
         for apath in rest_path:
             xx_train = load(path=apath)
-            x_train.append(xx_train[0])
+            x_train.append(xx_train)
       
         x_train = np.vstack(x_train)
         x_train,t_train = split_xt(x_train)
 
         
         # Run the model
-        MSE_mean, variance_mean = model_multi(x_train,x_test,t_train,t_test,seed)
+        MSE_mean, variance_mean,diff = model(x_train,x_test,t_train,t_test,seed)
         error.append(MSE_mean)
         var.append(variance_mean)
     return error,var
@@ -128,6 +129,23 @@ path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/jun
     
 # Run model
 error,var = LOOCV(path)
+
+# Single run
+x = load(path[0])
+seg_index = int(segment*len(x))
+x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
+MSE, variance, diff = model(x_train,x_test,t_train,t_test,seed)
+
+# Histogram on error distribution
+diff_mm = diff/scale_table # This is the mm value error
+print 'min error (mm) is',np.min(diff_mm),'max error',np.max(diff_mm),'median',np.median(diff_mm)
+plt.hist(diff_mm,bins='auto')
+plt.title('Histogram of error (mm)')
+plt.ylabel('Occurrences')
+plt.xlabel('Error value (mm)')
+plt.show()
+
+
 
 #%% Results
 print 'Number of random shuffles:',len(seeds)
