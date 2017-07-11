@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 #%% Parameters
 segment = 0.80 # Section of data that we train on
 seed = 0
-number_randomize = 5 # Number of times we want to random shuffle
+number_randomize = 2 # Number of times we want to random shuffle
 seeds = range(0,number_randomize)
 
 #%% Functions
@@ -67,6 +67,7 @@ def model(x_train, x_test, t_train, t_test,segment,seed):
 #    MSE = np.mean((regr.predict(x_test) - t_test) **2)
     
     # Do error as euclidean
+    diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1))
     MSE = np.mean(np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)))
     variance = regr.score(x_test,t_test)
     return MSE, variance
@@ -90,58 +91,45 @@ def model_multi(x_train,x_test,t_train,t_test,seed):
 #    print('Variance score: %.2f' %variance_mean)
     return MSE_mean, variance_mean
     
+def LOOCV(path):
+    # Runs cross validation routine
+    error = []
+    var = []
+    
+    for i in range(0,len(path)): # Iterate through the files
+        x_train=[]
+        x_test=[]
+        
+        single_path = path[i] # Single path
+        rest_path = path[:i]+path[i+1:] # Rest of paths
+        
+        x_test = load(path=single_path) # Load into x matrix
+        x_test,t_test = split_xt(x_test[0]) # Split to x and t
+    
+        
+        for apath in rest_path:
+            xx_train = load(path=apath)
+            x_train.append(xx_train[0])
+      
+        x_train = np.vstack(x_train)
+        x_train,t_train = split_xt(x_train)
+
+        
+        # Run the model
+        MSE_mean, variance_mean = model_multi(x_train,x_test,t_train,t_test,seed)
+        error.append(MSE_mean)
+        var.append(variance_mean)
+    return error,var
 #%% Prepare
 path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
-#x = []
-#xx = []
-#for apath in path:
-#    x_temp, xx_temp = load(path = apath)
-#    x.append(x_temp)
-#    xx.append(xx_temp)
-#
-##x,xx = load(path = '../Data/june23/analysis/1415/') # Load Data
-#x = np.vstack(x)
-#m = len(x)
-#seg_index = int(segment * len(x))
-
-#%% Practice LOO model
-# LOO = Leave one out. Train on 6 folders while testing on the last folder. Iterate through combinations 
 
 
-#t_train=[]
-#t_test=[]
-error = []
-var = []
+#%% Model
+    
+# Run model
+error,var = LOOCV(path)
 
-for i in range(0,len(path)):
-    x_train=[]
-    x_test=[]
-    
-    single_path = path[i] # Single path
-    rest_path = path[:i]+path[i+1:] # Rest of paths
-    
-    x_test = load(path=single_path) # Load into x matrix
-    x_test,t_test = split_xt(x_test[0]) # Split to x and t
-
-    
-    for apath in rest_path:
-        xx_train = load(path=apath)
-        x_train.append(xx_train[0])
-  
-    x_train = np.vstack(x_train)
-    x_train,t_train = split_xt(x_train)
-#    print 'i is',i
-#    print 'given path is ' ,path[i]
-#    print 'remainders are', path[:i]+path[i+1:]
-#    print '\n'
-    
-    # Run the model
-    MSE_mean, variance_mean = model_multi(x_train,x_test,t_train,t_test,seed)
-    error.append(MSE_mean)
-    var.append(variance_mean)
-    
-    
-# Results
+#%% Results
 print 'Number of random shuffles:',len(seeds)
 print 'Number of folder iterations',len(path)
 print 'Variances: ', var
