@@ -26,10 +26,11 @@ from xmatrix import xmatrix
 #%% Parameters
 # File paths for accessing data
 
-path ='../Data/june23/1/'
+#path ='../Data/june23/1/'
 # Declare a paths variable here if processing multiple folderss
-path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
-output_dir = '../Data/june23/analysis/'
+#path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
+path = ['../Data/july11/1/', '../Data/july11/2/', '../Data/july11/3/']
+output_dir = '../Data/july11/analysis/'
 output_file = 'analysis.csv'
 output_path = os.path.join(output_dir,output_file)
 
@@ -75,9 +76,9 @@ def extractx(path):
     # Save to CSV File so we can use it later
     np.savetxt(path+"x.csv",x,delimiter=",")
     np.savetxt(path+"xx.csv",xx,delimiter=",")
-    np.savetxt(path+"patient.csv",patient,delimiter=",")
-    np.savetxt(path+"gesture.csv",gesture,delimiter=",")
-    np.savetxt(path+"trial.csv",trial,delimiter=",")
+#    np.savetxt(path+"patient.csv",patient,delimiter=",")
+#    np.savetxt(path+"gesture.csv",gesture,delimiter=",")
+#    np.savetxt(path+"trial.csv",trial,delimiter=",")
 #    return 0
 #%% Main code
 # Generate File list

@@ -14,9 +14,11 @@ import numpy as np
 def load(path = '../Data/june23/analysis/'):
     # Load data from july analysis
 #    path = '../Data/june23/analysis/'
-    
+    print path
     x = np.genfromtxt(path+'x.csv',delimiter=',') # Load x matrix
 #    xx = np.genfromtxt(path+'xx.csv',delimiter=',') # Load xx matrix (contains patient,class,trial,data)
+    # Remove top row
+#    x = x[1:,:]
     return x
 def load2(path = '../Data/june23/analysis/'):
     # Load data, including the xx matrix

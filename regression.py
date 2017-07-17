@@ -3,9 +3,12 @@
 Created on Sat Jul 08 15:54:37 2017
 
 @author: Jordan
-July analysis
+July analysis of IR band results
 
-Scratch pad for analysis
+Format of imported x matrix
+[xcoord, ycoord, distance, sensor data]
+
+
 """
 from __future__ import division
 from  workspace_loader import load
@@ -13,13 +16,15 @@ from sklearn import datasets, linear_model
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #%% Parameters
-segment = 0.80 # Section of data that we train on
+segment = 0.70 # Section of data that we train on
 seed = 0
 number_randomize = 2 # Number of times we want to random shuffle
 seeds = range(0,number_randomize)
 scale_table = 428/500 # Table scaling in pixels/mm
+table_width = 500 # Table width in mm
 
 #%% Functions
 def randomize_data(x,seed):
@@ -29,8 +34,8 @@ def randomize_data(x,seed):
     return x
 def split_xt(xin):
     # Split data into xmatrix and t columns
-    t = xin[:,3:5]
-    x = xin[:,6:]
+    t = xin[:,0:2] # First two columns. ignore distance for now
+    x = xin[:,3:]
     return x,t
 def segment_data(x,seg_index):
     # Segment data based on chosen train/test segmentation
@@ -122,34 +127,62 @@ def LOOCV(path):
         var.append(variance_mean)
     return error,var
 #%% Prepare
-path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
+#path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
+path = ['../Data/july11/1/', '../Data/july11/2/', '../Data/july11/3/']
 
 
-#%% Model
+#%% Model LOOCV
     
-# Run model
-error,var = LOOCV(path)
 
-# Single run
-x = load(path[0])
-seg_index = int(segment*len(x))
-x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
-MSE, variance, diff = model(x_train,x_test,t_train,t_test,seed)
+## Run model in LOOCV config
+#error,var = LOOCV(path)
 
-# Histogram on error distribution
-diff_mm = diff/scale_table # This is the mm value error
-print 'min error (mm) is',np.min(diff_mm),'max error',np.max(diff_mm),'median',np.median(diff_mm)
-plt.hist(diff_mm,bins='auto')
-plt.title('Histogram of error (mm)')
-plt.ylabel('Occurrences')
-plt.xlabel('Error value (mm)')
-plt.show()
+#%%Single run
+#path = '../Data/july11/'
+errors = [] # Error values in mm
 
+for path in path:
+#path = path[2]
+    
+    x = load(path)
+    seg_index = int(segment*len(x))
+    x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
+    MSE, variance, diff = model(x_train,x_test,t_train,t_test,seed)
+    
+    # Histogram on error distribution
+    diff_mm = diff/scale_table # This is the mm value error
+    error_mean = np.mean(diff_mm)
+    errors.append(error_mean)
+    print 'Results: Mean error (mm)', error_mean, 'min error (mm) is',np.min(diff_mm),'max error',np.max(diff_mm),'median',np.median(diff_mm)
+    plt.figure()
+    plt.hist(diff_mm,bins='auto')
+    plt.title('Histogram of error (mm)')
+    plt.ylabel('Occurrences')
+    plt.xlabel('Error value (mm)')
+    plt.show()
+    
+    # 3D plot of error
+    fig = plt.figure()
+    
+    ax = fig.add_subplot(111, projection='3d')
+    
+    ax.scatter(t_test[:,0], t_test[:,1], diff)
+    
+    plt.title('Error with position')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Error')
+
+numfiles = len(path)
+print 'mean error across %d files was %f mm'%(numfiles,np.mean(errors))
 
 
 #%% Results
-print 'Number of random shuffles:',len(seeds)
-print 'Number of folder iterations',len(path)
-print 'Variances: ', var
-print 'MSE:', error
 
+print 'Number of random shuffles:',len(seeds)
+print 'Number of files',numfiles
+
+#%% LOOCV Result values
+#print 'Variances: ', var
+#print 'MSE:', error
+#print 'Error relative to table dimensions is ',np.mean(error)/table_width
