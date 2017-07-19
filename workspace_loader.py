@@ -11,11 +11,11 @@ Goal: Load specific file paths into the x matrix.
 """
 import numpy as np
 
-def load(path = '../Data/june23/analysis/'):
-    # Load data from july analysis
-#    path = '../Data/june23/analysis/'
-    print path
-    x = np.genfromtxt(path+'x.csv',delimiter=',') # Load x matrix
+def load(path):
+    # Load data from the raw csv file. We will skip the header since we now load the raw CSV, which has header in it
+    
+#    print path
+    x = np.genfromtxt(path,delimiter=',',skip_header=1) # Load x matrix
 #    xx = np.genfromtxt(path+'xx.csv',delimiter=',') # Load xx matrix (contains patient,class,trial,data)
     # Remove top row
 #    x = x[1:,:]

@@ -17,6 +17,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import glob
 
 #%% Parameters
 segment = 0.70 # Section of data that we train on
@@ -74,7 +75,7 @@ def model(x_train, x_test, t_train, t_test,seed):
     
     # Do error as euclidean
     diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)) # Euclidean error
-    MSE = np.mean(diff) # Mean error
+    MSE = np.mean(diff) # Mean error (in pixels)
     variance = regr.score(x_test,t_test)
     return MSE, variance, diff
 def model_multi(x_train,x_test,t_train,t_test,seed):
@@ -99,6 +100,7 @@ def model_multi(x_train,x_test,t_train,t_test,seed):
     
 def LOOCV(path):
     # Runs cross validation routine
+    # Accepts a list of files paths
     error = []
     var = []
     
@@ -126,63 +128,78 @@ def LOOCV(path):
         error.append(MSE_mean)
         var.append(variance_mean)
     return error,var
-#%% Prepare
-#path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
-path = ['../Data/july11/1/', '../Data/july11/2/', '../Data/july11/3/']
 
 
-#%% Model LOOCV
-    
+def singleRun(path):
+    errors = [] # Error values in mm
 
-## Run model in LOOCV config
-#error,var = LOOCV(path)
-
-#%%Single run
-#path = '../Data/july11/'
-errors = [] # Error values in mm
-
-for path in path:
-#path = path[2]
+    for path in path:
+    #path = path[2]
+        
+        x = load(path)
+        seg_index = int(segment*len(x))
+        x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
+        MSE, variance, diff = model(x_train,x_test,t_train,t_test,seed)
+        
+        # Histogram on error distribution
+        diff_mm = diff/scale_table # This is the mm value error
+        error_mean = np.mean(diff_mm)
+        errors.append(error_mean)
     
-    x = load(path)
-    seg_index = int(segment*len(x))
-    x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed)
-    MSE, variance, diff = model(x_train,x_test,t_train,t_test,seed)
+        print 'Results: Mean error (mm)', error_mean, 'min error (mm) is',np.min(diff_mm),'max error',np.max(diff_mm),'median',np.median(diff_mm)
+        
+        # Plots
+        plt.figure()
+        plt.hist(diff_mm,bins='auto')
+        plt.title('Histogram of error (mm)')
+        plt.ylabel('Occurrences')
+        plt.xlabel('Error value (mm)')
+        plt.show()
+        
+        # 3D plot of error
+        fig = plt.figure()
+        
+        ax = fig.add_subplot(111, projection='3d')
+        
+        ax.scatter(t_test[:,0], t_test[:,1], diff)
+        
+        plt.title('Error with position')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Error')
     
-    # Histogram on error distribution
-    diff_mm = diff/scale_table # This is the mm value error
-    error_mean = np.mean(diff_mm)
-    errors.append(error_mean)
-    print 'Results: Mean error (mm)', error_mean, 'min error (mm) is',np.min(diff_mm),'max error',np.max(diff_mm),'median',np.median(diff_mm)
-    plt.figure()
-    plt.hist(diff_mm,bins='auto')
-    plt.title('Histogram of error (mm)')
-    plt.ylabel('Occurrences')
-    plt.xlabel('Error value (mm)')
-    plt.show()
-    
-    # 3D plot of error
-    fig = plt.figure()
-    
-    ax = fig.add_subplot(111, projection='3d')
-    
-    ax.scatter(t_test[:,0], t_test[:,1], diff)
-    
-    plt.title('Error with position')
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Error')
-
-numfiles = len(path)
-print 'mean error across %d files was %f mm'%(numfiles,np.mean(errors))
+    numfiles = len(path)
+    print 'mean error across %d files was %f mm'%(numfiles,np.mean(errors))
+    print 'Number of random shuffles:',len(seeds)
+    print 'Number of files',numfiles
+    return 0
 
 
 #%% Results
 
-print 'Number of random shuffles:',len(seeds)
-print 'Number of files',numfiles
+
+
+#%% Prepare
+#path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
+path = ['../Data/july17/A - Neutral Hand Position/', '../Data/july17/B - Pronation, 45 Degrees/', '../Data/july17/C - Supination, 45 Degrees/']
+allfiles = []
+
+for path in path:
+
+    allfiles = allfiles + (glob.glob(path+'*.csv'))
+    
+#%% Single Run Analysis
+#singlefile = filelist[0]
+#singleRun(filelist)
+#test = load(singlefile)
+
+#%% Model LOOCV
+## Run model in LOOCV config
+error,var = LOOCV(allfiles)
+
 
 #%% LOOCV Result values
+
 #print 'Variances: ', var
 #print 'MSE:', error
-#print 'Error relative to table dimensions is ',np.mean(error)/table_width
+print 'Mean error was %.3f pixels, Error relative to table dimensions is %.3f ' % (np.mean(error), np.mean(error)/(table_width*scale_table))
