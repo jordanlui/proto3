@@ -24,8 +24,8 @@ segment = 0.70 # Section of data that we train on
 seed = 0
 number_randomize = 2 # Number of times we want to random shuffle
 seeds = range(0,number_randomize)
-scale_table = 428/500 # Table scaling in pixels/mm
-table_width = 500 # Table width in mm
+scale_table = 428/500 # Table scaling in pixels/mm. Note this calibration of active area square, but should be consistent across the entire camera frame.
+table_width = 500 # Table width in mm (test table)
 
 #%% Functions
 def randomize_data(x,seed):
@@ -101,6 +101,8 @@ def model_multi(x_train,x_test,t_train,t_test,seed):
 def LOOCV(path):
     # Runs cross validation routine
     # Accepts a list of files paths
+    # Changed to output system error in mm
+
     error = []
     var = []
     
@@ -125,7 +127,7 @@ def LOOCV(path):
         
         # Run the model
         MSE_mean, variance_mean,diff = model(x_train,x_test,t_train,t_test,seed)
-        error.append(MSE_mean)
+        error.append(MSE_mean/scale_table)
         var.append(variance_mean)
     return error,var
 
@@ -183,10 +185,11 @@ def singleRun(path):
 #path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
 path = ['../Data/july17/A - Neutral Hand Position/', '../Data/july17/B - Pronation, 45 Degrees/', '../Data/july17/C - Supination, 45 Degrees/']
 allfiles = []
+#apath=path[1]
 
-for path in path:
+for apath in path:
 
-    allfiles = allfiles + (glob.glob(path+'*.csv'))
+    allfiles =  allfiles + (glob.glob(apath+'*.csv'))
     
 #%% Single Run Analysis
 #singlefile = filelist[0]
@@ -202,4 +205,4 @@ error,var = LOOCV(allfiles)
 
 #print 'Variances: ', var
 #print 'MSE:', error
-print 'Mean error was %.3f pixels, Error relative to table dimensions is %.3f ' % (np.mean(error), np.mean(error)/(table_width*scale_table))
+print 'Mean error was %.3f mm, Error relative to table dimensions is %.3f ' % (np.mean(error), np.mean(error)/(table_width*scale_table))
