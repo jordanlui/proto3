@@ -3,11 +3,10 @@
 Created on Sat Jul 08 15:54:37 2017
 
 @author: Jordan
-July analysis of IR band results
+Library of code for analysis of results
 
 Format of imported x matrix
 [xcoord, ycoord, distance, sensor data]
-
 
 """
 from __future__ import division
@@ -61,12 +60,23 @@ def prep_model(x,seg_index,seed):
 	x = randomize_data(x,seed) # Shuffle the data
 	x_train, x_test, t_train, t_test = segment_data(x,seg_index) # Split into test and train
 	return x_train, x_test, t_train, t_test
-def model(x_train, x_test, t_train, t_test,seed):
+def error_euclid(regr,x_test, t_test):
+	# Error calculation, Euclidean distance between predicted and actual point
+	# Regr is our ML model. x_test and t_test are the test data
+	# This function uses model and x_test to calc prediction values and compare to t_test
+	diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)) # Euclidean error
+	MSE = np.mean(diff) # Mean error (in pixels)
+	variance = regr.score(x_test,t_test)
+	return MSE, variance, diff
+	
+def error_shoulder(regr, x_test, t_test):
+	# Error calculation with Euclidean distance from where the shoulder location has been estimated
+
+	
+def model(x_train, x_test, t_train, t_test, seed):
 	# Run the analysis
 	# Inputs: x, segment, random seeds
 	# Output: MSE Error Value, Variance score
-#	seg_index = int(segment * len(x))
-#	x_train, x_test, t_train, t_test = prep_model(x,seg_index,seed) # Shuffle, segment data
 	
 	regr = linear_model.LinearRegression(normalize=True) # Build model
 	regr.fit(x_train, t_train)  # Fit model
@@ -74,12 +84,15 @@ def model(x_train, x_test, t_train, t_test,seed):
 #	MSE = np.mean((regr.predict(x_test) - t_test) **2)
 	
 	# Do error as euclidean
-	diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)) # Euclidean error
-	MSE = np.mean(diff) # Mean error (in pixels)
-	variance = regr.score(x_test,t_test)
+#	diff = np.sqrt(np.sum((regr.predict(x_test) - t_test) **2,axis=1)) # Euclidean error
+#	MSE = np.mean(diff) # Mean error (in pixels)
+#	variance = regr.score(x_test,t_test)
+	MSE, variance, diff = error_euclid(regr,x_test,t_test) # Euclidean distance error calc
 	return MSE, variance, diff
+	
 def model_multi(x_train,x_test,t_train,t_test,seed):
 	# This function runs the model repeatedly based on number of random seeds and return the average MSE values and variances
+	# Useful for single file analysis - not useful for LOOCV
 	MSE = []
 	variance = []
 	for seed in seeds:
@@ -100,7 +113,7 @@ def model_multi(x_train,x_test,t_train,t_test,seed):
 	
 def LOOCV(path,seed=0,scale_table=1):
 	# Runs cross validation routine
-	# Accepts a list of files paths
+	# Accepts a list of files paths and performs LOOCV
 	# Changed to output system error in mm
 	
 
@@ -111,19 +124,19 @@ def LOOCV(path,seed=0,scale_table=1):
 		x_train=[]
 		x_test=[]
 		
-		single_path = path[i] # Single path
-		rest_path = path[:i]+path[i+1:] # Rest of paths
+		single_path = path[i] # Grab a single file for testing
+		rest_path = path[:i]+path[i+1:] # Rest of files are for training
 		
-		x_test = load(path=single_path) # Load into x matrix
+		x_test = load(path=single_path) # Load test file into into x matrix
 		x_test,t_test = split_xt(x_test) # Split to x and t
 	
 		
-		for apath in rest_path:
-			xx_train = load(path=apath)
-			x_train.append(xx_train)
+		for apath in rest_path:	# Loop through the training files
+			xx_train = load(path=apath) 
+			x_train.append(xx_train)	# Append into a master training list
 	  
-		x_train = np.vstack(x_train)
-		x_train,t_train = split_xt(x_train)
+		x_train = np.vstack(x_train) # Convert list to a matrix
+		x_train,t_train = split_xt(x_train) # Split to x and t arrays
 
 		
 		# Run the model
@@ -176,9 +189,4 @@ def singleRun(path,segment=0.7,seed=0,scale_table=1):
 #	print 'Number of random shuffles:',len(seeds)
 	print 'Number of files',numfiles
 	return 0
-
-
-#%% Results
-
-
 

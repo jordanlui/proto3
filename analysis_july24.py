@@ -38,15 +38,11 @@ allfiles =  (glob.glob(path+'*.csv'))
 #singlefile = filelist[0]
 #singleRun(filelist)
 #test = load(singlefile)
+#error, var = singleRun(allfiles,segment,seed,scale_table)
+
 
 #%% Model LOOCV
 ## Run model in LOOCV config
 error,var = LOOCV(allfiles,seed,scale_table)
-#error, var = singleRun(allfiles,segment,seed,scale_table)
 
-
-#%% LOOCV Result values
-
-#print 'Variances: ', var
-#print 'MSE:', error
 print 'Mean error was %.3f mm, Error relative to table dimensions is %.3f ' % (np.mean(error), np.mean(error)/(table_width*scale_table))
