@@ -69,9 +69,17 @@ def error_euclid(regr,x_test, t_test):
 	variance = regr.score(x_test,t_test)
 	return MSE, variance, diff
 	
-def error_shoulder(regr, x_test, t_test):
+def error_body(regr, x_test, t_test):
 	# Error calculation with Euclidean distance from where the shoulder location has been estimated
-
+	loc_body_real = [(160, 700)]  # Real x,y position of the body (shoulder)
+	dist_body_real = np.sqrt(np.sum((loc_body_real - t_test) **2, axis=1)) # pixel distance from mocap point to body. Array of euclid distance values
+	dist_body_pred = np.sqrt(np.sum((loc_body_real - regr.predict(x_test))**2,axis=1)) # Distance from predicted point to body
+	diff = np.abs(dist_body_pred - dist_body_real) # Difference in distance estimates
+	MSE = np.mean(diff)
+	variance = regr.score(x_test, t_test)
+	return MSE, variance, diff	
+	
+#	return 0
 	
 def model(x_train, x_test, t_train, t_test, seed):
 	# Run the analysis
@@ -88,6 +96,7 @@ def model(x_train, x_test, t_train, t_test, seed):
 #	MSE = np.mean(diff) # Mean error (in pixels)
 #	variance = regr.score(x_test,t_test)
 	MSE, variance, diff = error_euclid(regr,x_test,t_test) # Euclidean distance error calc
+	MSE, variance, diff = error_body(regr,x_test,t_test) # Euclidean distance error calc
 	return MSE, variance, diff
 	
 def model_multi(x_train,x_test,t_train,t_test,seed):
