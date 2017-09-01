@@ -60,6 +60,31 @@ def prep_model(x,seg_index,seed):
 	x = randomize_data(x,seed) # Shuffle the data
 	x_train, x_test, t_train, t_test = segment_data(x,seg_index) # Split into test and train
 	return x_train, x_test, t_train, t_test
+	
+def sensor_select(select,N=55):
+	# Select desired sensors for input and testing of model
+	# This can be useful for performing PCA
+	# Input is a 9 digit binary number called select and the # columns of x matrix, N
+	# Ouput mask is 57 digits, based on Sensor outputs from June 2017 onward
+	# Change mask size
+	select = str(select) # Format as string so we can access it
+	mask = np.ones(N, dtype=bool) # make a 'blank' mask
+	for i in range(0,4): # Loop for each of the 4 IR sensors
+		if int(select[i]) == 0: # If a flag is false, then turn off flag in mask
+			mask[[i]] = False
+	if int(select[4]) == 0: # Gyro
+		mask[[range(4,7)]] = False
+	if int(select[5]) == 0: # Omron 8 close
+		mask[[range(7,15)]] = False
+	if int(select[6]) == 0: # Omron 16 close
+		mask[[range(15,31)]] = False
+	if int(select[7]) == 0: # Omron 8 far
+		mask[[range(31,39)]] = False
+	if int(select[8]) == 0: # Omron 16 far
+		mask[[range(39,55)]] = False
+	
+	return mask # Return our mask value
+	
 def error_euclid(regr,x_test, t_test):
 	# Error calculation, Euclidean distance between predicted and actual point
 	# Regr is our ML model. x_test and t_test are the test data
@@ -81,10 +106,17 @@ def error_body(regr, x_test, t_test):
 	
 #	return 0
 	
-def model(x_train, x_test, t_train, t_test, seed):
+def model(x_train, x_test, t_train, t_test, seed, select_sensors=111111111):
 	# Run the analysis
 	# Inputs: x, segment, random seeds
 	# Output: MSE Error Value, Variance score
+
+	# Slice data arrays as required
+	M = x_train.shape[1]
+	mask = sensor_select(select_sensors,M) # Generate a mask object
+	# Apply the mask
+	x_train = x_train[:,mask]
+	x_test = x_test[:,mask]
 	
 	regr = linear_model.LinearRegression(normalize=True) # Build model
 	regr.fit(x_train, t_train)  # Fit model
@@ -120,7 +152,7 @@ def model_multi(x_train,x_test,t_train,t_test,seed):
 #	print('Variance score: %.2f' %variance_mean)
 	return MSE_mean, variance_mean
 	
-def LOOCV(path,seed=0,scale_table=1):
+def LOOCV(path,seed=0,scale_table=1, select_sensors=111111111):
 	# Runs cross validation routine
 	# Accepts a list of files paths and performs LOOCV
 	# Changed to output system error in mm
@@ -149,7 +181,7 @@ def LOOCV(path,seed=0,scale_table=1):
 
 		
 		# Run the model
-		MSE_mean, variance_mean,diff = model(x_train,x_test,t_train,t_test,seed)
+		MSE_mean, variance_mean,diff = model(x_train,x_test,t_train,t_test,seed,select_sensors)
 		error.append(MSE_mean/scale_table)
 		var.append(variance_mean)
 	return error,var

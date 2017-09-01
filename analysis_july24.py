@@ -19,6 +19,7 @@ number_randomize = 2 # Number of times we want to random shuffle
 seeds = range(0,number_randomize)
 scale_table = 428/500 # Table scaling in pixels/mm. Note this calibration of active area square, but should be consistent across the entire camera frame.
 table_width = 500 # Table width in mm (test table)
+select_sensors = 111111111
 
 allfiles = []
 
@@ -43,6 +44,6 @@ allfiles =  (glob.glob(path+'*.csv'))
 
 #%% Model LOOCV
 ## Run model in LOOCV config
-error,var = LOOCV(allfiles,seed,scale_table)
+error,var = LOOCV(allfiles,seed,scale_table,select_sensors)
 
 print 'Mean error was %.3f mm, Error relative to table dimensions is %.3f ' % (np.mean(error), np.mean(error)/(table_width*scale_table))
