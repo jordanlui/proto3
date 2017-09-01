@@ -4,7 +4,7 @@ Created on Thu Aug 31 17:40:28 2017
 
 @author: Jordan
 Analysis on IR Results
-June 24 data recorded by Kevin Andrews
+June 23 data recorded by Kevin Andrews
 
 
 """
@@ -20,28 +20,23 @@ seeds = range(0,number_randomize)
 scale_table = 428/500 # Table scaling in pixels/mm. Note this calibration of active area square, but should be consistent across the entire camera frame.
 table_width = 500 # Table width in mm (test table)
 
+#%% Prepare for multi file analysis
+path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
 allfiles = []
 
-#%% Multi Analysis
-#path = ['../Data/june23/1/','../Data/june23/2/','../Data/june23/3/','../Data/june23/4/','../Data/june23/5/','../Data/june23/6/','../Data/june23/7/']
-#path = ['../Data/july24/A - Neutral Hand Position/', '../Data/july24/B - Pronation, 45 Degrees/', '../Data/july24/C - Supination, 45 Degrees/']
-#for apath in path:
-#
-#    allfiles =  allfiles + (glob.glob(apath+'*.csv'))
+for apath in path:
+
+    allfiles =  allfiles + (glob.glob(apath+'*.csv'))
     
 #%% Single Run Analysis
-path = ['../Data/july24/A - Neutral Hand Position/']
-path = path[0]
-allfiles =  (glob.glob(path+'*.csv'))
-#singlefile = filelist[0]
-#singleRun(filelist)
-#test = load(singlefile)
+#path = ['../Data/june23/1/']
+#path = path[0]
+#allfiles =  (glob.glob(path+'*.csv'))
 
 #%% Model LOOCV
 ## Run model in LOOCV config
 error,var = LOOCV(allfiles,seed,scale_table)
-#error, var = singleRun(allfiles,segment,seed,scale_table)
-
+#error,var = singleRun(allfiles,segment,seed,scale_table) 
 
 #%% LOOCV Result values
 
