@@ -81,7 +81,7 @@ def sensor_select(select,N=55):
 	if int(select[7]) == 0: # Omron 8 far
 		mask[[range(31,39)]] = False
 	if int(select[8]) == 0: # Omron 16 far
-		mask[[range(39,55)]] = False
+		mask[[range(39,54)]] = False
 	
 	return mask # Return our mask value
 	
@@ -117,6 +117,7 @@ def model(x_train, x_test, t_train, t_test, seed, select_sensors=111111111):
 	# Apply the mask
 	x_train = x_train[:,mask]
 	x_test = x_test[:,mask]
+#	print 'dimension shrank from %i to %i' %(M,x_train.shape[1])
 	
 	regr = linear_model.LinearRegression(normalize=True) # Build model
 	regr.fit(x_train, t_train)  # Fit model
