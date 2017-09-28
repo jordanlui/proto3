@@ -53,11 +53,12 @@ void loop() {
   bluetooth.print('@');
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
   Serial.println("Light on");
-  bluetooth.print('Bluetooth says light is on');
+  bluetooth.print("Light on");
   delay(1000);                       // wait for a second
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  Serial.println("Light off");
-  bluetooth.print('Bluetooth says light is off');
+  
+  
+  bluetooth.print("Bluetooth says light is off");
   bluetooth.print('\n');
   delay(1000);                       // wait for a second
 }

@@ -1,5 +1,6 @@
 /* Script reads data from Prototype device and outputs to serial in JSON Format over BlueTooth
   Sensors include Omron, Sharp IR sensor, IMU, and FSRs.
+  
   Multiplexer setup is used to access the OMRON
   This script reads the data from a 8x1 OMRON D6T-8L sensor using only the Wire library.
   Note that use of D6T-44L 4x4 sensor requires the WireExt.h library, so that the 35 bytes of data can be read from the sensor.
@@ -19,6 +20,10 @@
   All i2c component SCL lines connect to regular Arduino SCL line.
   Note Arduino Uno i2c pin arrangements. A4 (SDA), A5 (SCL)
   Adding in the FSRs.
+
+  Update Summary:
+  Sept 2017:
+  Updating to output accelerometer data ignore the distance Omron sensors
 
 
 */
