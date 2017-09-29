@@ -162,7 +162,7 @@ void loop()
 //    OmronData2(); // OmronData2 isn't needed for the simplified script
 
     bluetooth.print('\n');    // Show the end of line
-    delay(100); // Delay
+    delay(5); // Delay 5ms should be 250 Hz recording frequency
   
 }
 

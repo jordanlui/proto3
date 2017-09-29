@@ -4,7 +4,7 @@
 from diagnostics import countPackets, packetContinuity
 import numpy as np
 
-path = "data/"
+path = "../data/sept28/"
 
 import glob
 import os

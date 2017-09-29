@@ -13,18 +13,10 @@
 #include <TimeLib.h>
 #include <ArduinoJson.h>
 
-
 float declination = 16.4; // Declination of Vancouver, as opposed to Sparkfun HQ.
 //const int numdigits = 6;
-const int updateRatems = 5; // Update rate loop timing. 10ms is 100Hz, 20ms is 50Hz, 100ms is 10Hz, etc.
+const int updateRatems = 20; // Update rate loop timing. 10ms is 100Hz, 20ms is 50Hz, 100ms is 10Hz, etc.
 int packetCount = 0; // Count packets sent
-
-//#ifdef LCD
-//#include <Adafruit_GFX.h>
-//#include <Adafruit_PCD8544.h>
-//// pin 6 - LCD reset (RST)
-////Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7, 5, 6);
-//#endif // LCD
 
 #define AHRS false         // Set to false for basic data read
 #define SerialDebug false  // Set to true to get Serial output for debugging
@@ -55,16 +47,10 @@ void setup()
   pinMode(myLed, OUTPUT);
   digitalWrite(myLed, HIGH);
 
-//#ifdef LCD
-//#endif // LCD
-
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
   Serial.print("MPU9250 "); Serial.print("I AM "); Serial.print(c, HEX);
   Serial.print(" I should be "); Serial.println(0x71, HEX);
-
-//#ifdef LCD
-//#endif // LCD
 
   if (c == 0x71) // WHO_AM_I should always be 0x68
   {
@@ -88,8 +74,7 @@ void setup()
     // Calibrate gyro and accelerometers, load biases in bias registers
     myIMU.calibrateMPU9250(myIMU.gyroBias, myIMU.accelBias);
 
-//#ifdef LCD
-//#endif // LCD
+
 
     myIMU.initMPU9250();
     // Initialize device for active mode read of acclerometer, gyroscope, and
@@ -102,8 +87,7 @@ void setup()
     Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX);
     Serial.print(" I should be "); Serial.println(0x48, HEX);
 
-//#ifdef LCD
-//#endif // LCD
+
 
     // Get magnetometer calibration from AK8963 ROM
     myIMU.initAK8963(myIMU.magCalibration);
@@ -120,8 +104,7 @@ void setup()
       Serial.println(myIMU.magCalibration[2], 2);
     }
 
-//#ifdef LCD
-//#endif // LCD
+
   } // if (c == 0x71)
   else
   {
@@ -270,9 +253,6 @@ void loop()
         Serial.println(" degrees C");
       }
 
-//#ifdef LCD
-//#endif // LCD
-
       myIMU.count = millis();
       digitalWrite(myLed, !digitalRead(myLed));  // toggle led
     } // if (myIMU.delt_t > 500)
@@ -354,7 +334,7 @@ void loop()
         Serial.println(" Hz");
       }
 
-//#ifdef LCD
+
 //      
 
 // With these settings the filter is updating at a ~145 Hz rate using the
@@ -373,7 +353,7 @@ void loop()
 // 6 DoF and MPU9150 9DoF sensors. The 3.3 V 8 MHz Pro Mini is doing pretty
 // well!
 
-//#endif // LCD
+
 
       myIMU.count = millis();
       myIMU.sumCount = 0;
