@@ -1,7 +1,5 @@
 /* Script reads data from Prototype device and outputs to serial in JSON Format over BlueTooth
   Sensors include Omron, Sharp IR sensor, IMU, and FSRs.
-
-  New version (Sept 2017) will read from 1 Omron and 2 sharp sensors. So Multiplexer isn't strictly needed
   
   Multiplexer setup is used to access the OMRON
   This script reads the data from a 8x1 OMRON D6T-8L sensor using only the Wire library.
@@ -25,7 +23,7 @@
 
   Update Summary:
   Sept 2017:
-  Updating to output accelerometer data ignore the distance Omron sensors and output acc/gyro data as fast as possible, even raw if required
+  Updating to output accelerometer data ignore the distance Omron sensors
 
 
 */
@@ -149,59 +147,24 @@ void setup()
 
   Wire.begin();
   Serial.println("Hello!");
-
-  selectMuxPin(omron4); // Select Omron 4x4 #1. Run in setup() since we only need to do this once.
 }
 
 void loop()
 {
-    bluetooth.print('@');   // Show the start of the line
-    SensorAccGyro(); // Read accelerometer and gyro, and IR distance sensors, send over Bluetooth
-    Omron44_1();    // Read Omron 4x4_1, and send over Bluetooth
-//    OmronData();    // Read Omron 4x4_1, and send over Bluetooth
-//    OmronData2(); // OmronData2 isn't needed for the simplified script
+    bluetooth.print('@');    
+    SensorData();
+    OmronData();
+//    OmronData2();
 
-    bluetooth.print('\n');    // Show the end of line
-    delay(5); // Delay 5ms should be 250 Hz recording frequency
-  
+    bluetooth.print('\n');    
+    delay(100);
+  //delay(10); // Main loop delay
 }
 
 ////////
 // Main functions
 ///////
 
-void SensorAccGyro(){
-  // Read from accelerometer and gyro, ignoring magnetometer
-  // Initialize JSON buffer
-  StaticJsonBuffer<500> jsonBuffer; // buffer size 300
-  // Create our JSON object
-  JsonObject& root = jsonBuffer.createObject();
-  int i = 0;
-
-  //Read from IR sensors
-  root["DL1"] = analogRead(ProxL);
-  root["DS1"] = analogRead(ProxS);
-  root["DL2"] = analogRead(ProxL2);
-  root["DS2"] = analogRead(ProxS2);
-
-  // Adafruit IMU Read
-  sensors_event_t accel, mag, gyro, temp;
-
-  lsm.getEvent(&accel, &mag, &gyro, &temp); 
-  //lsm.read();
-  //Save IMU Data to JSON String
-
-  root["AcX"] = accel.acceleration.x;
-  root["AcY"] = accel.acceleration.y;
-  root["AcZ"] = accel.acceleration.z;
-
-  root["GyX"] = gyro.gyro.x;
-  root["GyY"] = gyro.gyro.y;
-  root["GyZ"] = gyro.gyro.z;
-
-  root.printTo(bluetooth);
-  
-}
 void SensorData(){
   double pitch, roll, yaw;
   
@@ -214,7 +177,9 @@ void SensorData(){
   //Read from IR sensors
   root["DL1"] = analogRead(ProxL);
   root["DS1"] = analogRead(ProxS);
+
   root["DL2"] = analogRead(ProxL2);
+
   root["DS2"] = analogRead(ProxS2);
 
 
@@ -253,44 +218,6 @@ void SensorData(){
 
 //~~~~~~~~~~~~~~~~~
 
-void Omron44_1(){
-  // Read from the Omron4x4 only
-  // Initialize JSON buffer
-  StaticJsonBuffer<500> jsonBuffer; // buffer size 300
-  // Create our JSON object
-  JsonObject& root = jsonBuffer.createObject();
-  int i = 0;
-
-  // Read from Omron 4x4 sensor
-  //  selectMuxPin(omron4);
-  Wire.beginTransmission(D6T_addr);
-  Wire.write(D6T_cmd);
-  Wire.endTransmission();
-  delay(1);
-  if (WireExt.beginReception(D6T_addr) >= 0) {
-    i = 0;
-    // Receive all our bytes of data
-    for (i = 0; i < 35; i++) {
-      rbuf[i] = WireExt.get_byte();
-    }
-    WireExt.endReception(); // End reception
-    // Label our data as Omron 4x4
-    //    Serial.print("OMRON 4x4,");
-    t_PTAT = (rbuf[0] + (rbuf[1] << 8)) * 0.1;
-    JsonArray& data2 = root.createNestedArray("O16-1");
-    // Calculate the individual element values
-    for (i = 0; i < 16; i++) {
-      tdata[i] = (rbuf[(i * 2 + 2)] + (rbuf[(i * 2 + 3)] << 8)) * 0.1;
-      //      Serial.print(tdata[i]);
-      //      Serial.print(",");
-      data2.add(tdata[i]);
-    }
-  }
-
-  root.printTo(bluetooth);
-  
-}
-
 void OmronData(){
   //OMRONS
   // Initialize JSON buffer
@@ -298,8 +225,6 @@ void OmronData(){
   // Create our JSON object
   JsonObject& root = jsonBuffer.createObject();
   int i = 0;
-
-  
 
  //First Set of Omrons
   // Reading from Omron 8x1 sensor
