@@ -155,14 +155,15 @@ void setup()
 
 void loop()
 {
-    bluetooth.print('@');    
-    SensorAccGyro(); // Read accelerometer and gyro, and IR distance sensors
-    OmronData();    // Read Omron 4x4_1
+    bluetooth.print('@');   // Show the start of the line
+    SensorAccGyro(); // Read accelerometer and gyro, and IR distance sensors, send over Bluetooth
+    Omron44_1();    // Read Omron 4x4_1, and send over Bluetooth
+//    OmronData();    // Read Omron 4x4_1, and send over Bluetooth
 //    OmronData2(); // OmronData2 isn't needed for the simplified script
 
-    bluetooth.print('\n');    
-    delay(100);
-  //delay(10); // Main loop delay
+    bluetooth.print('\n');    // Show the end of line
+    delay(100); // Delay
+  
 }
 
 ////////
@@ -259,19 +260,9 @@ void Omron44_1(){
   // Create our JSON object
   JsonObject& root = jsonBuffer.createObject();
   int i = 0;
-  
-}
-
-void OmronData(){
-  //OMRONS
-  // Initialize JSON buffer
-  StaticJsonBuffer<500> jsonBuffer; // buffer size 300
-  // Create our JSON object
-  JsonObject& root = jsonBuffer.createObject();
-  int i = 0;
 
   // Read from Omron 4x4 sensor
-//  selectMuxPin(omron4);
+  //  selectMuxPin(omron4);
   Wire.beginTransmission(D6T_addr);
   Wire.write(D6T_cmd);
   Wire.endTransmission();
@@ -296,33 +287,47 @@ void OmronData(){
     }
   }
 
+  root.printTo(bluetooth);
+  
+}
+
+void OmronData(){
+  //OMRONS
+  // Initialize JSON buffer
+  StaticJsonBuffer<500> jsonBuffer; // buffer size 300
+  // Create our JSON object
+  JsonObject& root = jsonBuffer.createObject();
+  int i = 0;
+
+  
+
  //First Set of Omrons
   // Reading from Omron 8x1 sensor
-//  selectMuxPin(omron8); // change the addressing
-//  // Step one - send commands to the sensor
-//  Wire.beginTransmission(D6T_addr);
-//  Wire.write(D6T_cmd);
-//  Wire.endTransmission();
-//  delay(1); // Delay between instruction and data acquisition
-//  // Request data from the sensor
-//  Wire.requestFrom(D6T_addr, numbytes); // D6T-8 returns 19 bytes
-//  // Receive the data
-//  if (0 <= Wire.available()) { // If there is data still left in buffer, we acquire it.
-//    i = 0;
-//    for (i = 0; i < numbytes; i++) {
-//      rbuf[i] = Wire.read();
-//    }
-//    t_PTAT = (rbuf[0] + (rbuf[1] << 8) ) * 0.1;
-//    //    Serial.print("Omron 8x8,");
-//    JsonArray& data = root.createNestedArray("O8-1");
-//    for (i = 0; i < numel; i++) {
-//      tdata[i] = (rbuf[(i * 2 + 2)] + (rbuf[(i * 2 + 3)] << 8 )) * 0.1;
-//      //      Serial.print(tdata[i]);
-//      //      Serial.print(",");
-//      data.add(tdata[i]);
-//    }
-//    //    Serial.print("\n");
-//  }
+  selectMuxPin(omron8); // change the addressing
+  // Step one - send commands to the sensor
+  Wire.beginTransmission(D6T_addr);
+  Wire.write(D6T_cmd);
+  Wire.endTransmission();
+  delay(1); // Delay between instruction and data acquisition
+  // Request data from the sensor
+  Wire.requestFrom(D6T_addr, numbytes); // D6T-8 returns 19 bytes
+  // Receive the data
+  if (0 <= Wire.available()) { // If there is data still left in buffer, we acquire it.
+    i = 0;
+    for (i = 0; i < numbytes; i++) {
+      rbuf[i] = Wire.read();
+    }
+    t_PTAT = (rbuf[0] + (rbuf[1] << 8) ) * 0.1;
+    //    Serial.print("Omron 8x8,");
+    JsonArray& data = root.createNestedArray("O8-1");
+    for (i = 0; i < numel; i++) {
+      tdata[i] = (rbuf[(i * 2 + 2)] + (rbuf[(i * 2 + 3)] << 8 )) * 0.1;
+      //      Serial.print(tdata[i]);
+      //      Serial.print(",");
+      data.add(tdata[i]);
+    }
+    //    Serial.print("\n");
+  }
 
   // Read from Omron 4x4 sensor
   selectMuxPin(omron4);
