@@ -1,7 +1,7 @@
-# Check files
+# Check integrity of the latest file we've saved
 
 
-from diagnostics import *
+from diagnostics import countPackets, packetContinuity
 import numpy as np
 
 path = "data/"
@@ -13,22 +13,17 @@ import os
 list_of_files = glob.glob(path + '*') # * means all if need specific format then *.csv
 latest_file = max(list_of_files, key=os.path.getctime)
 
-print 'check average frequency value of latest file'
-
-# Analyze this file
-data = np.genfromtxt(latest_file, delimiter=",", skip_header=1)
-timeStart = data[0,0]
-timeEnd = data[-1,0]
-
-# Count the number of packets in each time step
-packetCount = []
-
-for i in range(int(timeStart), int(timeEnd)):
-	m = [row for row in data if row[0]==i]
-	packetCount.append(len(m))
-	
-print m
 
 
+data = np.genfromtxt(latest_file, delimiter=",", skip_header=1) # Load data
+
+packetCount,fMin,fMax,fMean,fSTD = countPackets(data[:,0:2]) # Check if the number of packets is consistent in files
+if fSTD < 1:
+	print 'Frequency (%.2f Hz) seems roughly constant since STDEV is < 1 (%.2f)'%(fMean,fSTD)
 
 # Check packet continuity
+checkContinuous = packetContinuity(data)
+if checkContinuous:
+	print 'Packets appear continuous'
+else:
+	print 'Packet loss may have occured'

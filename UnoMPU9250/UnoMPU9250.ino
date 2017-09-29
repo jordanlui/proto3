@@ -14,16 +14,17 @@
 #include <ArduinoJson.h>
 
 
-float declination = 16.4;
+float declination = 16.4; // Declination of Vancouver, as opposed to Sparkfun HQ.
 //const int numdigits = 6;
-const int updateRatems = 500;
+const int updateRatems = 5; // Update rate loop timing. 10ms is 100Hz, 20ms is 50Hz, 100ms is 10Hz, etc.
+int packetCount = 0; // Count packets sent
 
-#ifdef LCD
-#include <Adafruit_GFX.h>
-#include <Adafruit_PCD8544.h>
-// pin 6 - LCD reset (RST)
-Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7, 5, 6);
-#endif // LCD
+//#ifdef LCD
+//#include <Adafruit_GFX.h>
+//#include <Adafruit_PCD8544.h>
+//// pin 6 - LCD reset (RST)
+////Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7, 5, 6);
+//#endif // LCD
 
 #define AHRS false         // Set to false for basic data read
 #define SerialDebug false  // Set to true to get Serial output for debugging
@@ -33,17 +34,16 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 int myLed  = 13;  // Set up pin 13 led for toggling
 
 MPU9250 myIMU;
-const int mpuSize = 18; // Note this has to be a const integer.
-//uint8_t mpuData[18];
 
+
+// Variables for transmitting data via byte transmission
+const int mpuSize = 18; // Note this has to be a const integer. Size of the IMU transmission. 2 byte for each element of 9 DOF IMU
+//uint8_t mpuData[18];
 // Simple method
 float mpuData[9]; // 9 elements, 2 each
 
 void setup()
 {
-//  float declination = 16.4;
-  int packetCount = 0; // Count packets sent
-  packetCount++;
   
   Wire.begin();
   // TWBR = 12;  // 400 kbit/sec I2C speed
@@ -55,16 +55,16 @@ void setup()
   pinMode(myLed, OUTPUT);
   digitalWrite(myLed, HIGH);
 
-#ifdef LCD
-#endif // LCD
+//#ifdef LCD
+//#endif // LCD
 
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
   Serial.print("MPU9250 "); Serial.print("I AM "); Serial.print(c, HEX);
   Serial.print(" I should be "); Serial.println(0x71, HEX);
 
-#ifdef LCD
-#endif // LCD
+//#ifdef LCD
+//#endif // LCD
 
   if (c == 0x71) // WHO_AM_I should always be 0x68
   {
@@ -88,8 +88,8 @@ void setup()
     // Calibrate gyro and accelerometers, load biases in bias registers
     myIMU.calibrateMPU9250(myIMU.gyroBias, myIMU.accelBias);
 
-#ifdef LCD
-#endif // LCD
+//#ifdef LCD
+//#endif // LCD
 
     myIMU.initMPU9250();
     // Initialize device for active mode read of acclerometer, gyroscope, and
@@ -102,8 +102,8 @@ void setup()
     Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX);
     Serial.print(" I should be "); Serial.println(0x48, HEX);
 
-#ifdef LCD
-#endif // LCD
+//#ifdef LCD
+//#endif // LCD
 
     // Get magnetometer calibration from AK8963 ROM
     myIMU.initAK8963(myIMU.magCalibration);
@@ -120,8 +120,8 @@ void setup()
       Serial.println(myIMU.magCalibration[2], 2);
     }
 
-#ifdef LCD
-#endif // LCD
+//#ifdef LCD
+//#endif // LCD
   } // if (c == 0x71)
   else
   {
@@ -139,7 +139,8 @@ void loop()
   // On interrupt, check if data ready interrupt
 //  packetCount++;
   if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
-  {  
+  { 
+    // ============= Accelerometer =================== 
     myIMU.readAccelData(myIMU.accelCount);  // Read the x/y/z adc values
     myIMU.getAres();
 
@@ -149,6 +150,7 @@ void loop()
     myIMU.ay = (float)myIMU.accelCount[1]*myIMU.aRes; // - accelBias[1];
     myIMU.az = (float)myIMU.accelCount[2]*myIMU.aRes; // - accelBias[2];
 
+    // ============== Gyroscope =====================
     myIMU.readGyroData(myIMU.gyroCount);  // Read the x/y/z adc values
     myIMU.getGres();
 
@@ -158,26 +160,27 @@ void loop()
     myIMU.gy = (float)myIMU.gyroCount[1]*myIMU.gRes;
     myIMU.gz = (float)myIMU.gyroCount[2]*myIMU.gRes;
 
-    myIMU.readMagData(myIMU.magCount);  // Read the x/y/z adc values
-    myIMU.getMres();
-    // User environmental x-axis correction in milliGauss, should be
-    // automatically calculated
-    myIMU.magbias[0] = +470.;
-    // User environmental x-axis correction in milliGauss TODO axis??
-    myIMU.magbias[1] = +120.;
-    // User environmental x-axis correction in milliGauss
-    myIMU.magbias[2] = +125.;
+    // ============== Magnetometer ==================
+//    myIMU.readMagData(myIMU.magCount);  // Read the x/y/z adc values
+//    myIMU.getMres();
+//    // User environmental x-axis correction in milliGauss, should be
+//    // automatically calculated
+//    myIMU.magbias[0] = +470.;
+//    // User environmental x-axis correction in milliGauss TODO axis??
+//    myIMU.magbias[1] = +120.;
+//    // User environmental x-axis correction in milliGauss
+//    myIMU.magbias[2] = +125.;
 
     // Calculate the magnetometer values in milliGauss
     // Include factory calibration per data sheet and user environmental
     // corrections
     // Get actual magnetometer value, this depends on scale being set
-    myIMU.mx = (float)myIMU.magCount[0]*myIMU.mRes*myIMU.magCalibration[0] -
-               myIMU.magbias[0];
-    myIMU.my = (float)myIMU.magCount[1]*myIMU.mRes*myIMU.magCalibration[1] -
-               myIMU.magbias[1];
-    myIMU.mz = (float)myIMU.magCount[2]*myIMU.mRes*myIMU.magCalibration[2] -
-               myIMU.magbias[2];
+//    myIMU.mx = (float)myIMU.magCount[0]*myIMU.mRes*myIMU.magCalibration[0] -
+//               myIMU.magbias[0];
+//    myIMU.my = (float)myIMU.magCount[1]*myIMU.mRes*myIMU.magCalibration[1] -
+//               myIMU.magbias[1];
+//    myIMU.mz = (float)myIMU.magCount[2]*myIMU.mRes*myIMU.magCalibration[2] -
+//               myIMU.magbias[2];
   } // if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
 
   // Must be called before updating quaternions!
@@ -192,30 +195,30 @@ void loop()
   // modified to allow any convenient orientation convention. This is ok by
   // aircraft orientation standards! Pass gyro rate as rad/s
 //  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  my,  mx, mz);
-  MahonyQuaternionUpdate(myIMU.ax, myIMU.ay, myIMU.az, myIMU.gx*DEG_TO_RAD,
-                         myIMU.gy*DEG_TO_RAD, myIMU.gz*DEG_TO_RAD, myIMU.my,
-                         myIMU.mx, myIMU.mz, myIMU.deltat);
+//  MahonyQuaternionUpdate(myIMU.ax, myIMU.ay, myIMU.az, myIMU.gx*DEG_TO_RAD,
+//                         myIMU.gy*DEG_TO_RAD, myIMU.gz*DEG_TO_RAD, myIMU.my,
+//                         myIMU.mx, myIMU.mz, myIMU.deltat);
 
   if (!AHRS)
   {
     myIMU.delt_t = millis() - myIMU.count;
-    if (myIMU.delt_t > 10)  // 10ms is 100Hz, 20ms is 50Hz, 100ms is 10Hz, etc.
+    if (myIMU.delt_t > updateRatems)  // 10ms is 100Hz, 20ms is 50Hz, 100ms is 10Hz, etc.
     {
       
       // Construct our IMU Sequence here 
       // JSON Setup
       time_t t = now(); // Current execution time, in seconds
       const int numdigits = 6; // Doesn't seem to actual influence the output
-//      packetCount++;
+      packetCount++;
       // JSON setup
       StaticJsonBuffer<300> jsonBuffer;
       JsonObject& root = jsonBuffer.createObject();
-      root["config"] = "imonly";
+      root["config"] = "AccGyro";
       root["time"] = t; // Static time for now
-//      root["packet"] = packetCount;
+      root["packet"] = packetCount;
       JsonArray& acc = root.createNestedArray("acc");
       JsonArray& gyro = root.createNestedArray("gyro");
-      JsonArray& mag = root.createNestedArray("mag");
+//      JsonArray& mag = root.createNestedArray("mag");
       
       // JSON Variable allocation
       acc.add(myIMU.ax,numdigits);
@@ -226,9 +229,9 @@ void loop()
       gyro.add(myIMU.gy,numdigits);
       gyro.add(myIMU.gz,numdigits);
     
-      mag.add(myIMU.mx,numdigits);
-      mag.add(myIMU.my,numdigits);
-      mag.add(myIMU.mz,numdigits);
+//      mag.add(myIMU.mx,numdigits);
+//      mag.add(myIMU.my,numdigits);
+//      mag.add(myIMU.mz,numdigits);
     
       root.printTo(Serial);
       Serial.println();
@@ -267,8 +270,8 @@ void loop()
         Serial.println(" degrees C");
       }
 
-#ifdef LCD
-#endif // LCD
+//#ifdef LCD
+//#endif // LCD
 
       myIMU.count = millis();
       digitalWrite(myLed, !digitalRead(myLed));  // toggle led
@@ -351,26 +354,26 @@ void loop()
         Serial.println(" Hz");
       }
 
-#ifdef LCD
+//#ifdef LCD
 //      
 
-    // With these settings the filter is updating at a ~145 Hz rate using the
-    // Madgwick scheme and >200 Hz using the Mahony scheme even though the
-    // display refreshes at only 2 Hz. The filter update rate is determined
-    // mostly by the mathematical steps in the respective algorithms, the
-    // processor speed (8 MHz for the 3.3V Pro Mini), and the magnetometer ODR:
-    // an ODR of 10 Hz for the magnetometer produce the above rates, maximum
-    // magnetometer ODR of 100 Hz produces filter update rates of 36 - 145 and
-    // ~38 Hz for the Madgwick and Mahony schemes, respectively. This is
-    // presumably because the magnetometer read takes longer than the gyro or
-    // accelerometer reads. This filter update rate should be fast enough to
-    // maintain accurate platform orientation for stabilization control of a
-    // fast-moving robot or quadcopter. Compare to the update rate of 200 Hz
-    // produced by the on-board Digital Motion Processor of Invensense's MPU6050
-    // 6 DoF and MPU9150 9DoF sensors. The 3.3 V 8 MHz Pro Mini is doing pretty
-    // well!
+// With these settings the filter is updating at a ~145 Hz rate using the
+// Madgwick scheme and >200 Hz using the Mahony scheme even though the
+// display refreshes at only 2 Hz. The filter update rate is determined
+// mostly by the mathematical steps in the respective algorithms, the
+// processor speed (8 MHz for the 3.3V Pro Mini), and the magnetometer ODR:
+// an ODR of 10 Hz for the magnetometer produce the above rates, maximum
+// magnetometer ODR of 100 Hz produces filter update rates of 36 - 145 and
+// ~38 Hz for the Madgwick and Mahony schemes, respectively. This is
+// presumably because the magnetometer read takes longer than the gyro or
+// accelerometer reads. This filter update rate should be fast enough to
+// maintain accurate platform orientation for stabilization control of a
+// fast-moving robot or quadcopter. Compare to the update rate of 200 Hz
+// produced by the on-board Digital Motion Processor of Invensense's MPU6050
+// 6 DoF and MPU9150 9DoF sensors. The 3.3 V 8 MHz Pro Mini is doing pretty
+// well!
 
-#endif // LCD
+//#endif // LCD
 
       myIMU.count = millis();
       myIMU.sumCount = 0;
