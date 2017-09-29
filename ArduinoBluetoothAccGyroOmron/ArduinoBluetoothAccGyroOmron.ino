@@ -32,6 +32,8 @@
 #include <WireExt.h>
 #include <elapsedMillis.h>
 #include <ArduinoJson.h>
+#include <TimeLib.h>
+#include <Time.h>
 
 #include <SPI.h>
 
@@ -103,6 +105,7 @@ const int ProxS2 = 0; // The short range IR sensor, 2-15 cm. Analog address
 
 //First Loop Check
 int LoopOne = 0;
+int packetCount = 0;
 
 void setup()
 {
@@ -151,14 +154,14 @@ void setup()
 
 void loop()
 {
-    bluetooth.print('@');    
-    SensorData();
-    OmronData();
+  packetCount++;
+  bluetooth.print('@');    
+  SensorData(); // Currently reads both Omron in this function, allowing a single JSON object to be created
+//  OmronData();
 //    OmronData2();
-
-    bluetooth.print('\n');    
-    delay(100);
-  //delay(10); // Main loop delay
+  
+  bluetooth.print('\n');    
+  delay(10);
 }
 
 ////////
@@ -166,7 +169,7 @@ void loop()
 ///////
 
 void SensorData(){
-  double pitch, roll, yaw;
+//  double pitch, roll, yaw;
   
   // Initialize JSON buffer
   StaticJsonBuffer<500> jsonBuffer; // buffer size 300
@@ -174,18 +177,19 @@ void SensorData(){
   JsonObject& root = jsonBuffer.createObject();
   int i = 0;
 
+  root["packet"] = packetCount;
+  time_t t = now();
+  root["time"] = t;
+
   //Read from IR sensors
   root["DL1"] = analogRead(ProxL);
   root["DS1"] = analogRead(ProxS);
-
   root["DL2"] = analogRead(ProxL2);
-
   root["DS2"] = analogRead(ProxS2);
 
 
   // Adafruit IMU Read
   sensors_event_t accel, mag, gyro, temp;
-
   lsm.getEvent(&accel, &mag, &gyro, &temp); 
   //lsm.read();
   //Save IMU Data to JSON String
@@ -199,21 +203,75 @@ void SensorData(){
   root["GyZ"] = gyro.gyro.z;
 
   //Pitch, Roll, and Yaw
-  sensors_vec_t   orientation;
-    
-  ahrs.getOrientation(&orientation);
+//  sensors_vec_t   orientation;
+//    
+//  ahrs.getOrientation(&orientation);
+//
+//  // 'orientation' should have valid .roll and .pitch fields 
+//  roll = orientation.roll;
+//  pitch = orientation.pitch;
+//  yaw = orientation.heading;
+//
+//  root["Roll"] = roll;
+//  root["Pitch"] = pitch;
+//  root["Yaw"] = yaw;
 
-    // 'orientation' should have valid .roll and .pitch fields 
-    roll = orientation.roll;
-    pitch = orientation.pitch;
-    yaw = orientation.heading;
 
-    root["Roll"] = roll;
-    root["Pitch"] = pitch;
-    root["Yaw"] = yaw;
-    
+  //First Set of Omrons
+  // Reading from Omron 8x1 sensor
+  selectMuxPin(omron8_2); // change the addressing
+  // Step one - send commands to the sensor
+  Wire.beginTransmission(D6T_addr);
+  Wire.write(D6T_cmd);
+  Wire.endTransmission();
+  delay(1); // Delay between instruction and data acquisition
+  // Request data from the sensor
+  Wire.requestFrom(D6T_addr, numbytes); // D6T-8 returns 19 bytes
+  // Receive the data
+  if (0 <= Wire.available()) { // If there is data still left in buffer, we acquire it.
+    i = 0;
+    for (i = 0; i < numbytes; i++) {
+      rbuf[i] = Wire.read();
+    }
+    t_PTAT = (rbuf[0] + (rbuf[1] << 8) ) * 0.1;
+    //    Serial.print("Omron 8x8,");
+    JsonArray& data = root.createNestedArray("O8-1");
+    for (i = 0; i < numel; i++) {
+      tdata[i] = (rbuf[(i * 2 + 2)] + (rbuf[(i * 2 + 3)] << 8 )) * 0.1;
+      //      Serial.print(tdata[i]);
+      //      Serial.print(",");
+      data.add(tdata[i]);
+    }
+    //    Serial.print("\n");
+  }
 
-    root.printTo(bluetooth);
+  // Read from Omron 4x4 sensor
+  selectMuxPin(omron4_2);
+  Wire.beginTransmission(D6T_addr);
+  Wire.write(D6T_cmd);
+  Wire.endTransmission();
+  delay(1);
+  if (WireExt.beginReception(D6T_addr) >= 0) {
+    i = 0;
+    // Receive all our bytes of data
+    for (i = 0; i < 35; i++) {
+      rbuf[i] = WireExt.get_byte();
+    }
+    WireExt.endReception(); // End reception
+    // Label our data as Omron 4x4
+    //    Serial.print("OMRON 4x4,");
+    t_PTAT = (rbuf[0] + (rbuf[1] << 8)) * 0.1;
+    JsonArray& data2 = root.createNestedArray("O16-1");
+    // Calculate the individual element values
+    for (i = 0; i < 16; i++) {
+      tdata[i] = (rbuf[(i * 2 + 2)] + (rbuf[(i * 2 + 3)] << 8)) * 0.1;
+      //      Serial.print(tdata[i]);
+      //      Serial.print(",");
+      data2.add(tdata[i]);
+    }
+  }
+
+  root.printTo(bluetooth);
 }
 
 //~~~~~~~~~~~~~~~~~
@@ -226,7 +284,7 @@ void OmronData(){
   JsonObject& root = jsonBuffer.createObject();
   int i = 0;
 
- //First Set of Omrons
+  //First Set of Omrons
   // Reading from Omron 8x1 sensor
   selectMuxPin(omron8); // change the addressing
   // Step one - send commands to the sensor
