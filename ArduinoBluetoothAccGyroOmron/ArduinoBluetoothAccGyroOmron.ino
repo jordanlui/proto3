@@ -160,7 +160,8 @@ void loop()
 //  OmronData();
 //    OmronData2();
   
-  bluetooth.print('\n');    
+//  bluetooth.print('\n'); 
+  bluetooth.print('%');   
   delay(10);
 }
 
