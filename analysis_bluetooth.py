@@ -11,8 +11,7 @@ Goal: Parse Text files of data from Proto device, read from bluetooth COM port
 from __future__ import division
 import numpy as np
 import json
-import pandas
-from saveCSV import *
+from saveCSV import WriteProtoCSV
 
 path = "../data/sept29/"
 filename = 'move forward back.csv'

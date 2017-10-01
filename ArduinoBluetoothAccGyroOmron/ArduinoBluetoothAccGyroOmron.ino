@@ -195,11 +195,11 @@ void SensorData(){
   //lsm.read();
   //Save IMU Data to JSON String
 
-  root["AcX"] = accel.acceleration.x;
+  root["AcX"] = accel.acceleration.x; // Value in g (Full gravity of 9.81 m/s2 returns a value of 1.0g
   root["AcY"] = accel.acceleration.y;
   root["AcZ"] = accel.acceleration.z;
 
-  root["GyX"] = gyro.gyro.x;
+  root["GyX"] = gyro.gyro.x; // Value in degrees per second
   root["GyY"] = gyro.gyro.y;
   root["GyZ"] = gyro.gyro.z;
 

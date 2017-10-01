@@ -1,9 +1,12 @@
 # Functions for saving to CSV
-
+from __future__ import division
 import time
 from os.path import exists
 import csv
 import numpy as np
+
+
+g = 9.81 # Conversion factor from acceleration in Newtons (m/s2) to g
 
 def filePath():
 	path = "../data/"
@@ -13,8 +16,10 @@ def filePath():
 
 def WriteProtoCSV(datalist,path,filename='log.csv'):
 	# Write JSON data to CSV File
+	# CONVERSIONS done in this file to convert accelerometer force value (m/s2) to g values (g)
+	# Output units is time in seconds, accelerometer in g, gyro in degrees per second
 	global csv_success
-	headerTimeIMU = ['time', 'packet', 'AcX', 'AcY', 'AcZ', 'gX', 'gY', 'gZ', 'DL1', 'DS1', 'DL2', 'DS2']
+	headerTimeIMU = ['time (s)', 'packet', 'AcX (g)', 'AcY (g)', 'AcZ (g)', 'gX (dps)', 'gY (dps)', 'gZ (dps)', 'DL1', 'DS1', 'DL2', 'DS2']
 	header = np.hstack(( headerTimeIMU, np.repeat("O16",16), np.repeat("O8",8) ))
 	filename = path + 'processed_' + filename # Prefix for a new filename
 	f = csv.writer(open(filename,"w+"), lineterminator='\n')
@@ -23,7 +28,7 @@ def WriteProtoCSV(datalist,path,filename='log.csv'):
 		if count == 0:
 			f.writerow(header)
 			count += 1
-		rowTimeIMU = [ r['time'], r['packet'], r['AcX'], r['AcY'], r['AcZ'], r['GyX'], r['GyY'], r['GyZ'], r['DL1'], r['DS1'], r['DL2'], r['DS2']]
+		rowTimeIMU = [ r['time'], r['packet'], r['AcX']/g, r['AcY']/g, r['AcZ']/g, r['GyX'], r['GyY'], r['GyZ'], r['DL1'], r['DS1'], r['DL2'], r['DS2']]
 		omron16 = r['O16-1']
 		omron8 = r['O8-1']
 		rowPrimer = np.hstack((rowTimeIMU,omron16,omron8))
