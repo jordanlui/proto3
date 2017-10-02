@@ -24,27 +24,25 @@ mcuFreq = 16; % MCU Recording frequency, in Hz
 
 
 %% Filter analysis on stationary device
-filterRanges = [0.01:0.025:1];
+% File 6 was recorded with proto on desk. It shouldn't be moving.
+% filterRanges = [0.01:0.01:0.1]';
+% movement = [];
+% 
 % for i = 1:length(filterRanges)
 %     filtCutOff = filterRanges(i);
-%     
-%     
+%     outputString = 'Analysis on %s \n';
+%     fprintf(outputString,singleFile);
+%     [linPosHP,displacement,checkReturnCentre] = deadReckon(dataPath,mcuFreq,filtCutOff);
+%     movement(i,1) = displacement;
+%     movement(i,2) = checkReturnCentre;
 % end
+% moveSummary = [filterRanges movement];
 
 
 %% Regular Single analysis
-filtCutOff = 0.09;
+filtCutOff = 0.03;
 outputString = 'Analysis on %s \n';
 fprintf(outputString,singleFile);
-[linPosHP] = deadReckon(dataPath,mcuFreq,filtCutOff);
-displacement1 = sqrt(sum( (max(linPosHP) - min(linPosHP)).^2 ));
-checkReturnCentre = sqrt(sum( (linPosHP(end,:) - linPosHP(1,:)).^2 ));
+[linPosHP,displacement,checkReturnCentre] = deadReckon(dataPath,mcuFreq,filtCutOff);
 
-%% Plot the positions occupied
-linPosHPSelect = linPosHP(round(0.25 * length(linPosHP)):end,:);
-x = linPosHPSelect(:,1);
-y = linPosHPSelect(:,2);
-figure()
-plot(x,y)
-plotTitle = sprintf('xy position for "%s", filter cutoff %.2f', singleFile,filtCutOff);
-title(plotTitle)
+

@@ -6,7 +6,7 @@
 % addpath('ximu_matlab_library');	% include x-IMU MATLAB library
 % addpath('quaternion_library');	% include quatenrion library
 % addpath('MahonyAHRS');
-function [linPosHP] = deadReckon(dataPath,mcuFreq,filtCutOff)
+function [linPosHP, displacement, checkReturnCentre] = deadReckon(dataPath,mcuFreq,filtCutOff)
 
 addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
 addpath('Libraries/quaternion_library');
@@ -144,7 +144,7 @@ legend('X', 'Y', 'Z');
 %% High-pass filter linear velocity to remove drift
 
 order = 1;
-filtCutOff = 0.1;
+% filtCutOff = 0.1;
 [b, a] = butter(order, cutoffFreq, 'high');
 linVelHP = filtfilt(b, a, linVel);
 
@@ -181,7 +181,7 @@ legend('X', 'Y', 'Z');
 %% High-pass filter linear position to remove drift
 
 order = 1;
-filtCutOff = 0.1;
+% filtCutOff = 0.1;
 [b, a] = butter(order, cutoffFreq, 'high');
 linPosHP = filtfilt(b, a, linPos);
 
@@ -196,6 +196,11 @@ ylabel('g');
 title('High-pass filtered linear position');
 legend('X', 'Y', 'Z');
 
+%% Custom code from Jordan
+
+displacement = sqrt(sum( (max(linPosHP) - min(linPosHP)).^2 )); % Check displacement from recording. Note this can be a naieve calculation
+checkReturnCentre = sqrt(sum( (linPosHP(end,:) - linPosHP(1,:)).^2 ));
+
 %% Play animation
 
 SamplePlotFreq = 8;
@@ -206,5 +211,19 @@ SixDOFanimation(linPosHP, R, ...
                 'AxisLength', 0.1, 'ShowArrowHead', false, ...
                 'Xlabel', 'X (m)', 'Ylabel', 'Y (m)', 'Zlabel', 'Z (m)', 'ShowLegend', false, 'Title', 'Unfiltered',...
                 'CreateAVI', true, 'AVIfileNameEnum', false, 'AVIfps', ((1/samplePeriod) / SamplePlotFreq));            
- 
+
+%% Plot the movement path (xy plane)
+% linPosHPSelect = linPosHP(round(0.25 * length(linPosHP)):end,:); % Use
+% this if you want to trim off any starting transient
+linPosHPSelect = linPosHP;
+x = linPosHPSelect(:,1);
+y = linPosHPSelect(:,2);
+figure()
+plot(x,y)
+plotTitle = sprintf('xy position for "%s", filter cutoff %.2f', dataPath,filtCutOff);
+% xlabel = 'x position (m)';
+% ylabel = 'y position (m)';
+title(plotTitle)
+            
+            
 %% End of script
