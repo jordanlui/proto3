@@ -5,6 +5,10 @@ Created on Sun Oct 01 12:11:56 2017
 @author: Jordan
 
 Goal: Parse Text files of data from Proto device, read from bluetooth COM port
+Text file format is the JSON style formatting output of proto device, 
+as copied directly from the Sublime IDE. RegEx filtering to check for intact 
+JSON strings and remove line returns
+
 
 """
 
@@ -41,6 +45,7 @@ def tryJSON(data):
 
 def csv2JSON(path,filename):
 	# Load a CSV file of JSON strings, load as proper JSON objects and save to file
+	# This was used on data from Proto device that is properly formatted (no stray line returns)
 	
 	data = []
 	
@@ -57,25 +62,21 @@ def csv2JSON(path,filename):
 	WriteProtoCSV(data,path,filename)
 
 # Main Loop
-
 # RegEx Searching
-# Regex Searching attempt
 query = "{[\s\S]+?}"
-# Reading from https://stackoverflow.com/questions/17140886/how-to-search-and-replace-text-in-a-file-using-python
-
 
 file = filelist[0]
 for file in filelist: # Loop through files
 
 	filename = os.path.basename(file) # This is the actual filename (excluding the path)
-	f = open(file,"r")
+	f = open(file,"r") # Read the file into an object
 	filedata = f.read()
 	f.close()
 	
-	m = re.findall(query,filedata) # Find all strings matching the query
+	m = re.findall(query,filedata) # Find all strings matching the query using RegEx. Note this can read across lines
 	mFormat = []
 	for item in m:
-		item = item.replace('\n','')
-		item = tryJSON(item)
-		mFormat.append(item)
-	WriteProtoCSV(mFormat,path,filename[:-4])
+		item = item.replace('\n','') # Remove the stray and random line returns
+		item = tryJSON(item) # Load as JSON object
+		mFormat.append(item) # Add into new array
+	WriteProtoCSV(mFormat,path,filename[:-4]) # Write to CSV
