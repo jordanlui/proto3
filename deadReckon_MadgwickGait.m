@@ -5,12 +5,11 @@
 clear;
 close all;
 clc;
-% addpath('Quaternions');
-% addpath('ximu_matlab_library');
-addpath('/Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
-addpath('/Libraries/quaternion_library');
-addpath('/Libraries/MahonyAHRS');
 
+addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
+addpath('Libraries/quaternion_library');
+addpath('Libraries/MahonyAHRS');
+addpath('Libraries');
 % -------------------------------------------------------------------------
 % Select dataset (comment in/out)
 
@@ -18,16 +17,16 @@ addpath('/Libraries/MahonyAHRS');
 % startTime = 6;
 % stopTime = 26;
 
-dataPath = '../data/sept29/processed_move forward back.csv';
+dataPath = '../data/sept29/processed_walk around lab.csv';
 % dataPath = 'data/20170924/walk_forwardback.csv';
-
+% dataPath = '../../../Projects/Dead Reckoning IMU/Libraries/Gait-Tracking-With-x-IMU-master/Gait Tracking With x-IMU/Datasets/straightLine_CalInertialAndMag.csv';
 
 
 dataTemp = csvread(dataPath,1,0); % Skip the header
 time = dataTemp(:,1);
 packets = dataTemp(:,2);
-acc = dataTemp(:,3:5);
-gyr = dataTemp(:,6:8);
+acc = dataTemp(:,3:5); % Accelerometer data, g values
+gyr = dataTemp(:,6:8); % Gyro data, degrees per second
 accX = acc(:,1);
 accY = acc(:,2);
 accZ = acc(:,3);
@@ -40,19 +39,6 @@ mcuFreq = 16; % MCU Recording frequency, in Hz
 samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
 % cutoffFreq = (filtCutOff)/(1/samplePeriod);
 
-% -------------------------------------------------------------------------
-% Import data
-
-% samplePeriod = 1/256;
-% xIMUdata = xIMUdataClass(filePath, 'InertialMagneticSampleRate', 1/samplePeriod);
-% time = xIMUdata.CalInertialAndMagneticData.Time;
-% gyrX = xIMUdata.CalInertialAndMagneticData.Gyroscope.X;
-% gyrY = xIMUdata.CalInertialAndMagneticData.Gyroscope.Y;
-% gyrZ = xIMUdata.CalInertialAndMagneticData.Gyroscope.Z;
-% accX = xIMUdata.CalInertialAndMagneticData.Accelerometer.X;
-% accY = xIMUdata.CalInertialAndMagneticData.Accelerometer.Y;
-% accZ = xIMUdata.CalInertialAndMagneticData.Accelerometer.Z;
-% clear('xIMUdata');
 
 % -------------------------------------------------------------------------
 % Manually frame data
@@ -75,8 +61,10 @@ samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
 % Compute accelerometer magnitude
 acc_mag = sqrt(accX.*accX + accY.*accY + accZ.*accZ);
 
+% Default filter values are 0.001 and 5, with threshold 0.05
+
 % HP filter accelerometer data
-filtCutOff = 0.001;
+filtCutOff = 0.25;
 filtHPF = (2*filtCutOff)/(1/samplePeriod);
 % filtHPF = 7.8e-6;
 [b, a] = butter(1, filtHPF, 'high');
@@ -86,14 +74,14 @@ acc_magFilt = filtfilt(b, a, acc_mag);
 acc_magFilt = abs(acc_magFilt);
 
 % LP filter accelerometer data
-filtCutOff = 5;
+filtCutOff = 7.9;
 filtLPF = (2*filtCutOff)/(1/samplePeriod);
-% filtLPF = 0.04;
+% filtLPF = 0.99;
 [b, a] = butter(1, filtLPF, 'low');
 acc_magFilt = filtfilt(b, a, acc_magFilt);
 
 % Threshold detection
-stationary = acc_magFilt < 0.05;
+stationary = acc_magFilt < 0.025;
 
 % -------------------------------------------------------------------------
 % Plot data raw sensor data and stationary periods
@@ -127,7 +115,7 @@ linkaxes(ax,'x');
 % Compute orientation
 
 quat = zeros(length(time), 4);
-AHRSalgorithm = AHRS('SamplePeriod', 1/256, 'Kp', 1, 'KpInit', 1);
+AHRSalgorithm = AHRS('SamplePeriod', samplePeriod, 'Kp', 1, 'KpInit', 1);
 
 % Initial convergence
 initPeriod = 2;
@@ -174,7 +162,7 @@ hold off;
 % -------------------------------------------------------------------------
 % Compute translational velocities
 
-acc(:,3) = acc(:,3) - 9.81;
+acc(:,3) = acc(:,3) - 9.81; 
 
 % Integrate acceleration to yield velocity
 vel = zeros(size(acc));

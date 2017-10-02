@@ -39,19 +39,6 @@ samplePeriod = 1/mcuFreq; % Period is 1/frequency
 cutoffFreq = (2*filtCutOff)/(1/samplePeriod);
 % cutoffFreq = 9.8e-4;
 
-%{
-xIMUdata = xIMUdataClass('LoggedData/LoggedData');
-
-samplePeriod = 1/256;
-
-gyr = [xIMUdata.CalInertialAndMagneticData.Gyroscope.X...
-       xIMUdata.CalInertialAndMagneticData.Gyroscope.Y...
-       xIMUdata.CalInertialAndMagneticData.Gyroscope.Z];        % gyroscope
-acc = [xIMUdata.CalInertialAndMagneticData.Accelerometer.X...
-       xIMUdata.CalInertialAndMagneticData.Accelerometer.Y...
-       xIMUdata.CalInertialAndMagneticData.Accelerometer.Z];	% accelerometer
-
-%}
 
 %% Plot stuff
 % Plot
@@ -143,12 +130,36 @@ legend('X', 'Y', 'Z');
 
 %% High-pass filter linear velocity to remove drift
 
-order = 1;
-% filtCutOff = 0.1;
-[b, a] = butter(order, cutoffFreq, 'high');
-linVelHP = filtfilt(b, a, linVel);
+% order = 1;
+% % filtCutOff = 0.1;
+% [b, a] = butter(order, cutoffFreq, 'high');
+% linVelHP = filtfilt(b, a, linVel);
 
-% Plot
+%% Try filter from Madgwick Gait
+% acc_mag = sqrt(accX.*accX + accY.*accY + accZ.*accZ);
+acc_mag = sqrt(sum(acc.^2));
+
+% HP filter accelerometer data
+filtCutOff = 0.001;
+filtHPF = (2*filtCutOff)/(1/samplePeriod);
+% filtHPF = 7.8e-6;
+[b, a] = butter(1, filtHPF, 'high');
+acc_magFilt = filtfilt(b, a, acc_mag);
+
+% Compute absolute value
+acc_magFilt = abs(acc_magFilt);
+
+% LP filter accelerometer data
+filtCutOff = 5;
+filtLPF = (2*filtCutOff)/(1/samplePeriod);
+% filtLPF = 0.04;
+[b, a] = butter(1, filtLPF, 'low');
+acc_magFilt = filtfilt(b, a, acc_magFilt);
+
+% Threshold detection
+stationary = acc_magFilt < 0.05;
+
+%% Plot
 figure('Name', 'High-pass filtered Linear Velocity');
 hold on;
 plot(linVelHP(:,1), 'r');
