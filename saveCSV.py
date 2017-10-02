@@ -4,6 +4,8 @@ import time
 from os.path import exists
 import csv
 import numpy as np
+import re
+import json
 
 
 g = 9.81 # Conversion factor from acceleration in Newtons (m/s2) to g
@@ -13,6 +15,35 @@ def filePath():
 	timestamp = time.strftime("%Y%m%d_")
 	filename = str(path + timestamp+ "log.csv")
 	return filename
+
+def cleanJSON(filedata,path='../Data/',filename='log'):
+	# RegEx Searching
+	query = "{[\s\S]+?}" # This is the JSON query string
+	
+	m = re.findall(query,filedata) # Find all strings matching the query using RegEx. Note this can read across lines
+	mFormat = []
+	for item in m:
+		item = item.replace('\n','') # Remove the stray and random line returns
+		try:
+			
+			item = json.loads(item) # Load as JSON object
+			mFormat.append(item) # Add into new array
+		except:
+			print 'Invalid JSON'
+			print item
+			
+	if mFormat:
+		print 'attempting to write %i records'%len(mFormat)
+		WriteProtoCSV(mFormat,path,filename) # Write to CSV
+
+def tryJSON(data):
+	try:
+		j = json.loads(data)
+		return j
+	except:
+		print 'Invalid JSON'
+		print data
+		return False
 
 def WriteProtoCSV(datalist,path,filename='log.csv'):
 	# Write JSON data to CSV File
