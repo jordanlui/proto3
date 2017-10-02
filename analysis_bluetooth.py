@@ -25,7 +25,7 @@ filelist = []
 for file in glob.glob(path+'*.txt'):
 	if os.path.basename(file) == 'readme.txt':
 		# Do nothing, don't import this file
-		print 'readme.txt'
+		print 'readme.txt detected, skipped'
 	else:
 		filelist.append(file)
 
@@ -56,17 +56,26 @@ def csv2JSON(path,filename):
 	# Now save to file, using a save CSV function
 	WriteProtoCSV(data,path,filename)
 
-# Loop
-textToSearch = "}.\n{"
-textToReplace = "}\n{"
+# Main Loop
 
-# Reading from https://stackoverflow.com/questions/17140886/how-to-search-and-replace-text-in-a-file-using-python
-
-f = open(filelist[0],"r")
-filedata = f.read()
-f.close()
-
+# RegEx Searching
 # Regex Searching attempt
 query = "{[\s\S]+?}"
+# Reading from https://stackoverflow.com/questions/17140886/how-to-search-and-replace-text-in-a-file-using-python
 
-m = re.findall(query,filedata) # Find all matching
+
+file = filelist[0]
+for file in filelist: # Loop through files
+
+	filename = os.path.basename(file) # This is the actual filename (excluding the path)
+	f = open(file,"r")
+	filedata = f.read()
+	f.close()
+	
+	m = re.findall(query,filedata) # Find all strings matching the query
+	mFormat = []
+	for item in m:
+		item = item.replace('\n','')
+		item = tryJSON(item)
+		mFormat.append(item)
+	WriteProtoCSV(mFormat,path,filename[:-4])

@@ -21,7 +21,7 @@ def WriteProtoCSV(datalist,path,filename='log.csv'):
 	global csv_success
 	headerTimeIMU = ['time (s)', 'packet', 'AcX (g)', 'AcY (g)', 'AcZ (g)', 'gX (dps)', 'gY (dps)', 'gZ (dps)', 'DL1', 'DS1', 'DL2', 'DS2']
 	header = np.hstack(( headerTimeIMU, np.repeat("O16",16), np.repeat("O8",8) ))
-	filename = path + 'processed_' + filename # Prefix for a new filename
+	filename = path + 'processed_' + filename + '.csv' # Prefix for a new filename
 	f = csv.writer(open(filename,"w+"), lineterminator='\n')
 	count = 0
 	for r in datalist:
