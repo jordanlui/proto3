@@ -28,6 +28,14 @@ time = dataTemp(:,1);
 packets = dataTemp(:,2);
 acc = dataTemp(:,3:5); % Accelerometer data, g values
 gyr = dataTemp(:,6:8); % Gyro data, degrees per second
+
+% [accCal,gyrCal] = calibrateIMU(acc,gyr); % Note this still needs work
+gyrCal = [2.50245051837889,2.28717247879359,-4.21495994344957]; % Calibration data from Oct 2 data of device sitting on desk
+% Calibration related compensation
+for i = 1:3
+    gyr(:,i) = gyr(:,i) - gyrCal(i);
+end
+
 accX = acc(:,1);
 accY = acc(:,2);
 accZ = acc(:,3);
@@ -177,6 +185,8 @@ end
 
 
 % Compute integral drift during non-stationary periods
+% Note that errors in code are happening here due to inconsistent numbers
+% of of elements
 velDrift = zeros(size(vel));
 stationaryStart = find([0; diff(stationary)] == -1);
 stationaryEnd = find([0; diff(stationary)] == 1);
