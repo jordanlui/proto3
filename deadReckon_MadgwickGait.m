@@ -1,5 +1,6 @@
 % General code analysis
 % Adapted from Madgwick gait analysis script
+% More general: Contains HPF and LPF to filter both sides
 
 
 clear;

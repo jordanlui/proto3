@@ -1,4 +1,5 @@
-%% Jordan modifying script
+% Dead reckoning script adapated from Madgwick. Focused on high oscillation
+% data filtering, so only HPF performed
 
 
 %% Housekeeping
