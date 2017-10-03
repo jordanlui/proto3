@@ -1,18 +1,16 @@
 % Dead reckoning script adapated from Madgwick. Focused on high oscillation
 % data filtering, so only HPF performed
+% https://github.com/xioTechnologies/Oscillatory-Motion-Tracking-With-x-IMU
 
 
 %% Housekeeping
 
-% addpath('ximu_matlab_library');	% include x-IMU MATLAB library
-% addpath('quaternion_library');	% include quatenrion library
-% addpath('MahonyAHRS');
 function [linPosHP, displacement, checkReturnCentre] = deadReckon(dataPath,mcuFreq,filtCutOff)
 
 addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
 addpath('Libraries/quaternion_library');
 addpath('Libraries/MahonyAHRS');
-% addpath('../Data/sept29/');
+addpath('Libraries');
 close all;                     	% close all figures
 % clear;                         	% clear all variables
 % clc;                          	% clear the command terminal
