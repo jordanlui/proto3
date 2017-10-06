@@ -1,4 +1,4 @@
-% General code analysis
+% General Dead Reckon analysis and plotting
 % Adapted from Madgwick gait analysis script
 % More general: Contains HPF and LPF to filter both sides
 % https://github.com/xioTechnologies/Gait-Tracking-With-x-IMU/tree/master/Gait%20Tracking%20With%20x-IMU
@@ -30,11 +30,27 @@ acc = dataTemp(:,3:5); % Accelerometer data, g values
 gyr = dataTemp(:,6:8); % Gyro data, degrees per second
 
 % [accCal,gyrCal] = calibrateIMU(acc,gyr); % Note this still needs work
-gyrCal = [2.50245051837889,2.28717247879359,-4.21495994344957]; % Calibration data from Oct 2 data of device sitting on desk
+% gyrCal = [2.50245051837889,2.28717247879359,-4.21495994344957]; % Calibration data from Oct 2 data of device sitting on desk
+% Calibration values from October 5. New code to ensure packet loss is
+% essentially eliminated
+gyrCal = [7.58, -2.60, 9.71];
+AccMax = [9.97, 11.4, 12.23];
+AccMin = [-11.47, -10.79, -10.24];
+
 % Calibration related compensation
+% Mean shift gyro values
 for i = 1:3
     gyr(:,i) = gyr(:,i) - gyrCal(i);
 end
+
+% Normalize accelerometer values
+% This will accept accelerometer values in m/s2 and normalize in g values
+for i = 1:3
+    col = acc(:,i);
+    col = 2 * (col - AccMin(i)) / (AccMax(i) - AccMin(i)) - 1;
+    acc(:,i) = col;
+end
+
 
 accX = acc(:,1);
 accY = acc(:,2);
@@ -47,6 +63,9 @@ gyrZ = gyr(:,3);
 % mcuFreq = 16; % MCU Recording frequency, in Hz
 samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
 % cutoffFreq = (filtCutOff)/(1/samplePeriod);
+
+% Calibrate data
+% Recalc gyro
 
 
 % -------------------------------------------------------------------------
@@ -256,7 +275,7 @@ posPlot = [posPlot; [posPlot(end, 1)*onesVector, posPlot(end, 2)*onesVector, pos
 quatPlot = [quatPlot; [quatPlot(end, 1)*onesVector, quatPlot(end, 2)*onesVector, quatPlot(end, 3)*onesVector, quatPlot(end, 4)*onesVector]];
 
 % Create 6 DOF animation
-SamplePlotFreq = 4;
+SamplePlotFreq = 15;
 Spin = 120;
 SixDOFanimation(posPlot, quatern2rotMat(quatPlot), ...
                 'SamplePlotFreq', SamplePlotFreq, 'Trail', 'All', ...
