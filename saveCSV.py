@@ -29,11 +29,11 @@ def cleanJSON(filedata,path='../Data/',filename='log'):
 			item = json.loads(item) # Load as JSON object
 			mFormat.append(item) # Add into new array
 		except:
-			print 'Invalid JSON'
-			print item
+			print('Invalid JSON')
+			print(item)
 			
 	if mFormat:
-		print 'attempting to write %i records'%len(mFormat)
+		print('attempting to write %i records'%len(mFormat))
 		WriteProtoCSV(mFormat,path,filename) # Write to CSV
 
 def tryJSON(data):
@@ -41,8 +41,8 @@ def tryJSON(data):
 		j = json.loads(data)
 		return j
 	except:
-		print 'Invalid JSON'
-		print data
+		print('Invalid JSON')
+		print(data)
 		return False
 
 def WriteProtoCSV(datalist,path,filename='log.csv'):

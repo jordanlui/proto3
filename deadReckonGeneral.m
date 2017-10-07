@@ -209,6 +209,23 @@ end
 velDrift = zeros(size(vel));
 stationaryStart = find([0; diff(stationary)] == -1);
 stationaryEnd = find([0; diff(stationary)] == 1);
+
+
+% Introduce error handling for the mismatch
+if length(stationaryEnd) == length(stationaryStart)
+    % Do nothing, we can proceed
+elseif length(stationaryEnd) > length(stationaryStart) % If End is longer
+    if stationaryEnd(1) < stationaryStart(1)
+        % If first start value is smaller, we have an issue. we have to
+        % resize stationaryEnd
+        stationaryEnd = stationaryEnd(2:end);
+    else
+        stationaryEnd = stationaryEnd(1:end-1);
+    end
+    
+elseif length(stationaryEnd) < length(stationaryStart)
+end
+
 for i = 1:numel(stationaryEnd)
     driftRate = vel(stationaryEnd(i)-1, :) / (stationaryEnd(i) - stationaryStart(i));
     enum = 1:(stationaryEnd(i) - stationaryStart(i));
@@ -269,7 +286,7 @@ quatPlot = quat;
 
 
 % Extend final sample to delay end of animation
-extraTime = 20;
+extraTime = 1;
 onesVector = ones(extraTime*(1/samplePeriod), 1);
 posPlot = [posPlot; [posPlot(end, 1)*onesVector, posPlot(end, 2)*onesVector, posPlot(end, 3)*onesVector]];
 quatPlot = [quatPlot; [quatPlot(end, 1)*onesVector, quatPlot(end, 2)*onesVector, quatPlot(end, 3)*onesVector, quatPlot(end, 4)*onesVector]];

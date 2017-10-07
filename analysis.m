@@ -8,20 +8,12 @@ mcuFreq = 140; % MCU Recording frequency, in Hz
 
 %% Load Files
 
-% Manually specify files
-% Analysis Sept 29 data
-% files = {'processed_fwd back 5x 30cm.csv', 'processed_move forward back.csv', 'processed_original proto data.csv', 'processed_proto modified.csv', 'processed_reach forward swing and back.csv', 'processed_sitting on desk near me.csv', 'processed_walk around lab.csv', 'processed_walk random.csv' };
-% sourceDir = '../Data/sept29/';
-% fileSelect = 8; % Choose your file here
-% aFile = char(files(fileSelect));
-% dataPath = strcat(sourceDir,aFile);
-
 % Path load files
 % Oct 2 data
 sourceDir = '../Data/IMU_Timing/Flora/';
 files = dir([sourceDir, '\*.csv']); % Grab the files in directory
 numfiles = length(files(not([files.isdir]))); 
-pickFile = 2; % Pick the file to analyze
+pickFile = 7; % Pick the file to analyze
 aFile = files(pickFile).name;
 dataPath = strcat(sourceDir,aFile);
 
@@ -80,7 +72,7 @@ end
 % General Madgwick approach
 filtHPF = 0.001;
 filtLPF = 5;
-stationaryThreshold = 0.05;
+stationaryThreshold = 0.008;
 [pos,displacement,checkReturnCentre] = deadReckonGeneral(dataPath,mcuFreq,filtLPF,filtHPF,stationaryThreshold); % General Model
 
 
