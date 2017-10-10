@@ -22,17 +22,19 @@ addpath('Libraries');
 % dataPath = 'data/20170924/walk_forwardback.csv';
 % dataPath = '../../../Projects/Dead Reckoning IMU/Libraries/Gait-Tracking-With-x-IMU-master/Gait Tracking With x-IMU/Datasets/straightLine_CalInertialAndMag.csv';
 
+[filepath,name,ext] = fileparts(dataPath);
+plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,stationaryThreshold);
 
 dataTemp = csvread(dataPath,1,0); % Skip the header
 time = dataTemp(:,1);
 packets = dataTemp(:,2);
 acc = dataTemp(:,3:5); % Accelerometer data, g values
 gyr = dataTemp(:,6:8); % Gyro data, degrees per second
+accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
 
 % [accCal,gyrCal] = calibrateIMU(acc,gyr); % Note this still needs work
-% gyrCal = [2.50245051837889,2.28717247879359,-4.21495994344957]; % Calibration data from Oct 2 data of device sitting on desk
-% Calibration values from October 5. New code to ensure packet loss is
-% essentially eliminated
+
+% Calibration values from October 5. 
 gyrCal = [7.58, -2.60, 9.71];
 AccMax = [9.97, 11.4, 12.23];
 AccMin = [-11.47, -10.79, -10.24];
@@ -51,6 +53,54 @@ for i = 1:3
     acc(:,i) = col;
 end
 
+% Before and after analysis of acc and gyro data
+
+
+
+%% FFT Plots of Accelerometer and Gyro
+
+
+M = length(dataTemp);
+acc_both = [dataTemp(:,3:5) acc];
+gyr_both = [dataTemp(:,6:8) gyr];
+figure(1)
+for i = 1:6 % Accelerometer data
+    subplot(2,3,i)
+    Y = fft(acc_both(:,i));
+    L = M;
+    Fs = mcuFreq;
+    P2 = abs(Y/L);
+    P1 = P2(1:L/2+1);
+    P1(2:end-1) = 2*P1(2:end-1);
+
+    f = Fs*(0:(L/2))/L;
+    plot(f,P1)
+    plotTitle = strcat('FFT acc', plotInfo);
+    title(plotTitle)
+    xlabel('f (Hz)')
+    ylabel('|P1(f)|')
+end
+
+figure(2)
+for i = 1:6 % Gyro data
+    subplot(2,3,i)
+    Y = fft(gyr_both(:,i));
+    L = M;
+    Fs = mcuFreq;
+    P2 = abs(Y/L);
+    P1 = P2(1:L/2+1);
+    P1(2:end-1) = 2*P1(2:end-1);
+
+    f = Fs*(0:(L/2))/L;
+    plot(f,P1)
+    plotTitle = strcat('FFT gyro', plotInfo);
+    title(plotTitle)
+    xlabel('f (Hz)')
+    ylabel('|P1(f)|')
+end
+
+
+
 
 accX = acc(:,1);
 accY = acc(:,2);
@@ -64,12 +114,8 @@ gyrZ = gyr(:,3);
 samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
 % cutoffFreq = (filtCutOff)/(1/samplePeriod);
 
-% Calibrate data
-% Recalc gyro
-
-
 % -------------------------------------------------------------------------
-% Manually frame data
+%% Manually frame data
 
 % startTime = 0;
 % stopTime = 10;
@@ -84,7 +130,7 @@ samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
 % accZ = accZ(indexSel, :);
 
 % -------------------------------------------------------------------------
-% Detect stationary periods
+%% Detect stationary periods
 
 % Compute accelerometer magnitude
 acc_mag = sqrt(accX.*accX + accY.*accY + accZ.*accZ);
@@ -263,11 +309,32 @@ hold on;
 plot(time, pos(:,1), 'r');
 plot(time, pos(:,2), 'g');
 plot(time, pos(:,3), 'b');
-title('Position');
+titleString = strcat('Position', plotInfo);
+title(titleString);
 xlabel('Time (s)');
 ylabel('Position (m)');
 legend('X', 'Y', 'Z');
 hold off;
+
+% FFT Analysis of position data
+figure()
+M = length(pos);
+for i = 1:3
+    subplot(1,3,i)
+    Y = fft(pos(:,i));
+    L = M;
+    Fs = mcuFreq;
+    P2 = abs(Y/L);
+    P1 = P2(1:L/2+1);
+    P1(2:end-1) = 2*P1(2:end-1);
+
+    f = Fs*(0:(L/2))/L;
+    plot(f,P1)
+    plotTitle = strcat('FFT pos', plotInfo);
+    title(plotTitle)
+    xlabel('f (Hz)')
+    ylabel('|P1(f)|')
+end
 
 % -------------------------------------------------------------------------
 %% Custom code from Jordan
@@ -276,7 +343,7 @@ displacement = sqrt(sum( (max(pos) - min(pos)).^2 )); % Check displacement from 
 checkReturnCentre = sqrt(sum( (pos(end,:) - pos(1,:)).^2 ));
 
 
-%% Plot 3D foot trajectory
+%% Plot 3D trajectory
 
 % % Remove stationary periods from data to plot
 % posPlot = pos(find(~stationary), :);
@@ -292,7 +359,7 @@ posPlot = [posPlot; [posPlot(end, 1)*onesVector, posPlot(end, 2)*onesVector, pos
 quatPlot = [quatPlot; [quatPlot(end, 1)*onesVector, quatPlot(end, 2)*onesVector, quatPlot(end, 3)*onesVector, quatPlot(end, 4)*onesVector]];
 
 % Create 6 DOF animation
-SamplePlotFreq = 15;
+SamplePlotFreq = 25;
 Spin = 120;
 SixDOFanimation(posPlot, quatern2rotMat(quatPlot), ...
                 'SamplePlotFreq', SamplePlotFreq, 'Trail', 'All', ...

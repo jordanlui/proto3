@@ -13,7 +13,7 @@ mcuFreq = 140; % MCU Recording frequency, in Hz
 sourceDir = '../Data/IMU_Timing/Flora/';
 files = dir([sourceDir, '\*.csv']); % Grab the files in directory
 numfiles = length(files(not([files.isdir]))); 
-pickFile = 7; % Pick the file to analyze
+pickFile = 5; % Pick the file to analyze
 aFile = files(pickFile).name;
 dataPath = strcat(sourceDir,aFile);
 
