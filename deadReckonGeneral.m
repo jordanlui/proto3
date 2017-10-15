@@ -3,24 +3,17 @@
 % More general: Contains HPF and LPF to filter both sides
 % https://github.com/xioTechnologies/Gait-Tracking-With-x-IMU/tree/master/Gait%20Tracking%20With%20x-IMU
 
-function [pos, displacement, checkReturnCentre] = deadReckonGeneral(dataPath,mcuFreq,filtLPF,filtHPF,stationaryThreshold)
+function [pos, displacement, maxDisplacement3Axis] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold)
 
 addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
 addpath('Libraries/quaternion_library');
 addpath('Libraries/MahonyAHRS');
 addpath('Libraries');
-
-
 % -------------------------------------------------------------------------
 % Select dataset (comment in/out)
-
 % filePath = 'Datasets/straightLine';
 % startTime = 6;
 % stopTime = 26;
-
-% dataPath = '../data/sept29/processed_walk around lab.csv';
-% dataPath = 'data/20170924/walk_forwardback.csv';
-% dataPath = '../../../Projects/Dead Reckoning IMU/Libraries/Gait-Tracking-With-x-IMU-master/Gait Tracking With x-IMU/Datasets/straightLine_CalInertialAndMag.csv';
 
 [filepath,name,ext] = fileparts(dataPath);
 plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,stationaryThreshold);
@@ -34,8 +27,11 @@ accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
 
 % [accCal,gyrCal] = calibrateIMU(acc,gyr); % Note this still needs work
 
+mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calculate frequency from the data
+mcuFreq = floor(mcuFreq); % Integer frequency value
+
 % Calibration values from October 5. 
-gyrCal = [7.58, -2.60, 9.71];
+gyrCal = [7.48, -2.33, -22.50];
 AccMax = [9.97, 11.4, 12.23];
 AccMin = [-11.47, -10.79, -10.24];
 
@@ -46,20 +42,17 @@ for i = 1:3
 end
 
 % Normalize accelerometer values
-% This will accept accelerometer values in m/s2 and normalize in g values
+% This will accept accelerometer values in m/s2 and normalize to values
+% beween -1 and 1 g
 for i = 1:3
     col = acc(:,i);
     col = 2 * (col - AccMin(i)) / (AccMax(i) - AccMin(i)) - 1;
     acc(:,i) = col;
 end
 
-% Before and after analysis of acc and gyro data
+%% Before and after analysis of acc and gyro data
 
-
-
-%% FFT Plots of Accelerometer and Gyro
-
-
+% FFT Plots of Accelerometer and Gyro
 M = length(dataTemp);
 acc_both = [dataTemp(:,3:5) acc];
 gyr_both = [dataTemp(:,6:8) gyr];
@@ -100,8 +93,6 @@ for i = 1:6 % Gyro data
 end
 
 
-
-
 accX = acc(:,1);
 accY = acc(:,2);
 accZ = acc(:,3);
@@ -110,9 +101,7 @@ gyrY = gyr(:,2);
 gyrZ = gyr(:,3);
 
 
-% mcuFreq = 16; % MCU Recording frequency, in Hz
-samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
-% cutoffFreq = (filtCutOff)/(1/samplePeriod);
+samplePeriod = (1 / (mcuFreq)); % Period is 1/frequency
 
 % -------------------------------------------------------------------------
 %% Manually frame data
@@ -132,31 +121,58 @@ samplePeriod = 1 / (mcuFreq); % Period is 1/frequency
 % -------------------------------------------------------------------------
 %% Detect stationary periods
 
+
+%% Filter Accelerometer mag value
+
 % Compute accelerometer magnitude
 acc_mag = sqrt(accX.*accX + accY.*accY + accZ.*accZ);
+figure()
+plot(acc_mag)
+hold on
 
 % Default filter values are 0.001 and 5, with threshold 0.05
 
+% Method 1: Two step BPF 
 % HP filter accelerometer data
-% filtLPF = 0.001; % default value
-filtHPF = (2*filtHPF)/(1/samplePeriod);
-% filtHPF = 7.8e-6;
-[b, a] = butter(1, filtHPF, 'high');
+wnHPF = (2*filtHPF)/(1/samplePeriod);
+[b, a] = butter(1, wnHPF, 'high');
 acc_magFilt = filtfilt(b, a, acc_mag);
+plot(acc_magFilt)
 
 % Compute absolute value
 acc_magFilt = abs(acc_magFilt);
 
 % LP filter accelerometer data
-% filtLPF = 7.9; % default value
-% filtLPF = 0.99;
-filtLPF = (2*filtLPF)/(1/samplePeriod);
-[b, a] = butter(1, filtLPF, 'low');
+wnLPF = (2*filtLPF)/(1/samplePeriod);
+[b, a] = butter(1, wnLPF, 'low');
 acc_magFilt = filtfilt(b, a, acc_magFilt);
+plot(acc_magFilt)
 
-% Threshold detection
-% stationaryThreshold = 0.05;
 stationary = acc_magFilt < stationaryThreshold;
+plot(stationary)
+hold off
+legend({'acc_mag','acc_mag HPF','acc_mag BPF'},'Interpreter', 'none')
+title('Accelerometer values: Raw and Filtered')
+
+% Method 2: IIR Filter 
+% filtIIR = designfilt('bandpassiir','FilterOrder',20, ...
+%          'HalfPowerFrequency1',filtHPF,'HalfPowerFrequency2',filtLPF, ...
+%          'SampleRate',mcuFreq);
+% filtFIR = designfilt('bandpassfir','FilterOrder',20, ...
+%          'CutoffFrequency1',filtHPF,'CutoffFrequency2',filtLPF, ...
+%          'SampleRate',mcuFreq); 
+% fvtool(filtFIR)
+% acc_magFilt = filter(filtFIR, acc_mag);
+% % acc_magFilt = abs(acc_magFilt);
+% stationary = acc_magFilt < stationaryThreshold;
+% figure()
+% hold on
+% plot(acc_mag)
+% plot(acc_magFilt)
+% plot(stationary)
+% hold off
+% title('FIR/IIR filtering')
+% legend('Original','FIR or IIR filter','stationary detection')
 
 % -------------------------------------------------------------------------
 % Plot data raw sensor data and stationary periods
@@ -184,6 +200,31 @@ ax(2) = subplot(2,1,2);
     ylabel('Acceleration (g)');
     legend('X', 'Y', 'Z', 'Filtered', 'Stationary');
     hold off;
+linkaxes(ax,'x');
+
+
+figure('Position', [9 39 900 600], 'NumberTitle', 'off', 'Name', 'Gyro Calibration');
+ax(1) = subplot(1,2,2);
+    hold on;
+    plot(time, gyrX, 'r');
+    plot(time, gyrY, 'g');
+    plot(time, gyrZ, 'b');
+    title('Gyroscope Calibrated');
+    xlabel('Time (s)');
+    ylabel('Angular velocity (^\circ/s)');
+    legend('X', 'Y', 'Z');
+    hold off;
+ax(2) = subplot(1,2,1);
+    hold on;
+    plot(time, accgyr_orig(:,4), 'r');
+    plot(time, accgyr_orig(:,5), 'g');
+    plot(time, accgyr_orig(:,6), 'b');
+    title('Gyroscope');
+    xlabel('Time (s)');
+    ylabel('Angular velocity (^\circ/s)');
+    legend('X', 'Y', 'Z');
+    hold off;
+
 linkaxes(ax,'x');
 
 % -------------------------------------------------------------------------
@@ -339,8 +380,8 @@ end
 % -------------------------------------------------------------------------
 %% Custom code from Jordan
 
-displacement = sqrt(sum( (max(pos) - min(pos)).^2 )); % Check displacement from recording. Note this can be a naieve calculation
-checkReturnCentre = sqrt(sum( (pos(end,:) - pos(1,:)).^2 ));
+maxDisplacement3Axis = sqrt(sum( (max(pos) - min(pos)).^2 )); % Check total 3 axis displacement from recording. Can be a naieve calculation
+displacement = sqrt(sum( (pos(end,:) - pos(1,:)).^2 ));
 
 
 %% Plot 3D trajectory

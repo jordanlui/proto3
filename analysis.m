@@ -4,13 +4,11 @@ close all;                     	% close all figures
 clear;                         	% clear all variables
 clc;          
 
-mcuFreq = 140; % MCU Recording frequency, in Hz
-
 %% Load Files
 
 % Path load files
 % Oct 2 data
-sourceDir = '../Data/IMU_Timing/Flora/';
+sourceDir = '../Data/oct14/';
 files = dir([sourceDir, '\*.csv']); % Grab the files in directory
 numfiles = length(files(not([files.isdir]))); 
 pickFile = 5; % Pick the file to analyze
@@ -18,61 +16,38 @@ aFile = files(pickFile).name;
 dataPath = strcat(sourceDir,aFile);
 
 
-%% Filter analysis on stationary device
-% File 6 was recorded with proto on desk. It shouldn't be moving.
-% filterRanges = [0.01:0.01:0.1]';
-% movement = [];
-% 
-% for i = 1:length(filterRanges)
-%     filtCutOff = filterRanges(i);
-%     outputString = 'Analysis on %s \n';
-%     fprintf(outputString,singleFile);
-%     [linPosHP,displacement,checkReturnCentre] = deadReckon(dataPath,mcuFreq,filtCutOff);
-%     movement(i,1) = displacement;
-%     movement(i,2) = checkReturnCentre;
-% end
-% moveSummary = [filterRanges movement];
-%%
-% Frequency analysis
-dataTemp = csvread(dataPath,1,0); % Skip the header
-time = dataTemp(:,1);
-packets = dataTemp(:,2);
-acc = dataTemp(:,3:5); % Accelerometer data, g values
-gyr = dataTemp(:,6:8); % Gyro data, degrees per second
-M = length(packets);
-imu = [acc gyr];
-
-% FFT Plots of Accelerometer and Gyro
-figure(1)
-
-for i = 1:6
-    subplot(2,3,i)
-    Y = fft(imu(:,i));
-    L = M;
-    Fs = mcuFreq;
-    P2 = abs(Y/L);
-    P1 = P2(1:L/2+1);
-    P1(2:end-1) = 2*P1(2:end-1);
-
-    f = Fs*(0:(L/2))/L;
-    plot(f,P1)
-    plotTitle = sprintf('Single-Sided FFT of %s',aFile);
-    title(plotTitle)
-    xlabel('f (Hz)')
-    ylabel('|P1(f)|')
-end
-
 %% Analysis of results
-% Regular Single analysis
-% filtCutOff = 0.03;
-% outputString = 'Analysis on %s \n';
-% fprintf(outputString,aFile);
-% [linPosHP,displacement,checkReturnCentre] = deadReckon(dataPath,mcuFreq,filtCutOff); % Oscillation model
-% 
+
 % General Madgwick approach
-filtHPF = 0.001;
-filtLPF = 5;
-stationaryThreshold = 0.008;
-[pos,displacement,checkReturnCentre] = deadReckonGeneral(dataPath,mcuFreq,filtLPF,filtHPF,stationaryThreshold); % General Model
+% Common Default Parameters
+% filtHPF = 0.001;
+% filtLPF = 5;
+% stationaryThreshold = 0.01;
+
+% Param Experimentation
+filtHPF = 0.001; % Actual Filter param in Hz
+filtLPF = 5; % Actual Filter param in Hz
+stationaryThreshold = 0.007;
 
 
+[pos,displacement,checkReturnCentre] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold); % General Model
+
+%% Analysis of all files in a folder
+% results = cell(numfiles,5);
+% 
+% for i = 1:numfiles
+%     pickFile = i;
+%     aFile = files(pickFile).name;
+%     dataPath = strcat(sourceDir,aFile);
+%     
+%     [pos,displacement, maxDisplacement3Axis] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold); % General Model
+%     % Store results
+%     results{i,1} = aFile;
+%     results{i,2} = displacement;
+%     results{i,3} = filtHPF;
+%     results{i,4} = filtLPF;
+%     results{i,5} = stationaryThreshold;
+% end
+% outputName = strcat(sourceDir,'analysis/','results.csv');
+% T = cell2table(results,'VariableNames',{'file','Displacement','HPF','LPF','Thresh'});
+% writetable(T,outputName)
