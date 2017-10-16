@@ -8,14 +8,12 @@ clc;
 
 % Path load files
 % Oct 2 data
-sourceDir = '../Data/oct14/';
+sourceDir = '../Data/oct15/';
 files = dir([sourceDir, '\*.csv']); % Grab the files in directory
 numfiles = length(files(not([files.isdir]))); 
-pickFile = 5; % Pick the file to analyze
+pickFile = 6; % Pick the file to analyze
 aFile = files(pickFile).name;
 dataPath = strcat(sourceDir,aFile);
-
-
 %% Analysis of results
 
 % General Madgwick approach
@@ -27,9 +25,7 @@ dataPath = strcat(sourceDir,aFile);
 % Param Experimentation
 filtHPF = 0.001; % Actual Filter param in Hz
 filtLPF = 5; % Actual Filter param in Hz
-stationaryThreshold = 0.007;
-
-
+stationaryThreshold = 0.019;
 [pos,displacement,checkReturnCentre] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold); % General Model
 
 %% Analysis of all files in a folder
