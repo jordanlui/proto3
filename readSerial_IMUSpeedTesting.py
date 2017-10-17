@@ -13,14 +13,14 @@ import serial
 import time
 
 # Useful variables and system parameters
-mcuFreq = 150 # Microcontroller frequency, in Hz
+mcuFreq = 120 # Estimate of microcontroller frequency for loop timing, in Hz
 mcuPeriod = 1 / mcuFreq # Python loop timing, in seconds
-recordingTime = 15 # Set desired recording time
+recordingTime = 60 # Set desired recording time
 packetCountFreq = 200 # Interval for system printing packet numbers
 
 # Parameters to save to file
-path = '../Data/oct15/'
-filename = 'step in place'
+path = '../Data/oct16/'
+filename = 'calibration_6axes'
 fullFile = path + filename + '.csv'
 
 # Make serial connection
@@ -85,6 +85,9 @@ frequency = (packetSent) / duration
 print('Sent %i packets in %.2f sec. Freq %.2f Hz' % (packetSent, duration, frequency))
 if packetSent == len(completeLines):
 	print('Packet loss unlikely. Number of packets implies no drops')
+else:
+    print('Packet loss has possibly occured')
+        
 
 # Save to a file
 with open(fullFile, 'wb') as csv_file:

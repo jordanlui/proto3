@@ -30,10 +30,11 @@ accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
 mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calculate frequency from the data
 mcuFreq = floor(mcuFreq); % Integer frequency value
 
-% Calibration values from October 5. 
-gyrCal = [7.48, -2.33, -22.50];
-AccMax = [9.97, 11.4, 12.23];
-AccMin = [-11.47, -10.79, -10.24];
+% Calibration values from October 16. 
+load('calibration_oct16.mat')
+% gyrCal = [6.787350142	-1.984579545	-21.95253208];
+% AccMax = [10.118649	10.043275	11.127223];
+% AccMin = [-10.816157	-10.214361	-10.224532];
 
 % Calibration related compensation
 % Mean shift gyro values
@@ -395,7 +396,7 @@ quatPlot = quat;
 
 % Extend final sample to delay end of animation
 extraTime = 1;
-onesVector = ones(extraTime*(1/samplePeriod), 1);
+onesVector = ones(floor(extraTime*(1/samplePeriod)), 1);
 posPlot = [posPlot; [posPlot(end, 1)*onesVector, posPlot(end, 2)*onesVector, posPlot(end, 3)*onesVector]];
 quatPlot = [quatPlot; [quatPlot(end, 1)*onesVector, quatPlot(end, 2)*onesVector, quatPlot(end, 3)*onesVector, quatPlot(end, 4)*onesVector]];
 
