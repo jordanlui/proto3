@@ -3,7 +3,7 @@
 % More general: Contains HPF and LPF to filter both sides
 % https://github.com/xioTechnologies/Gait-Tracking-With-x-IMU/tree/master/Gait%20Tracking%20With%20x-IMU
 
-function [pos, displacement, maxDisplacement3Axis] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold)
+function [pos, displacement, maxDisplacement3Axis,accgyr_orig,acc,gyr,vel,mcuFreq] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold)
 
 addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
 addpath('Libraries/quaternion_library');
@@ -31,7 +31,7 @@ mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calc
 mcuFreq = floor(mcuFreq); % Integer frequency value
 
 % Calibration values from October 16. 
-load('calibration_oct16.mat')
+load('calibration_flora_oct5.mat')
 % gyrCal = [6.787350142	-1.984579545	-21.95253208];
 % AccMax = [10.118649	10.043275	11.127223];
 % AccMin = [-10.816157	-10.214361	-10.224532];
@@ -73,6 +73,7 @@ for i = 1:6 % Accelerometer data
     title(plotTitle)
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
+    xlim([0 20])
 end
 
 figure(2)
@@ -91,6 +92,7 @@ for i = 1:6 % Gyro data
     title(plotTitle)
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
+    xlim([0 20])
 end
 
 
@@ -359,23 +361,56 @@ legend('X', 'Y', 'Z');
 hold off;
 
 % FFT Analysis of position data
+L = length(acc);
+Fs = mcuFreq;
+f = Fs*(0:(L/2))/L;
+plotTitles={'acc x','acc y','acc z','vel x',' vel y','vel z',' pos x',' pos y',' pos z'};
 figure()
-M = length(pos);
 for i = 1:3
-    subplot(1,3,i)
-    Y = fft(pos(:,i));
-    L = M;
-    Fs = mcuFreq;
+    % Accelerometer fft
+    subplot(3,3,i)
+    hold on
+    Y = fft(acc(:,i));
     P2 = abs(Y/L);
     P1 = P2(1:L/2+1);
     P1(2:end-1) = 2*P1(2:end-1);
-
-    f = Fs*(0:(L/2))/L;
     plot(f,P1)
-    plotTitle = strcat('FFT pos', plotInfo);
+    plotTitle = plotTitles{i};
     title(plotTitle)
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
+    xlim([-1 20])
+    ylim([0 2.5])
+    
+    % Velocity fft
+    subplot(3,3,i+3)
+    hold on
+    Y = fft(vel(:,i));
+    P2 = abs(Y/L);
+    P1 = P2(1:L/2+1);
+    P1(2:end-1) = 2*P1(2:end-1);
+    plot(f,P1)
+    plotTitle = plotTitles{i+3};
+    title(plotTitle)
+    xlabel('f (Hz)')
+    ylabel('|P1(f)|')
+    xlim([-1 20])
+    ylim([0 0.25])
+    
+    % Position fft
+    subplot(3,3,i+6)
+    hold on
+    Y = fft(pos(:,i));
+    P2 = abs(Y/L);
+    P1 = P2(1:L/2+1);
+    P1(2:end-1) = 2*P1(2:end-1);
+    plot(f,P1)
+    plotTitle = plotTitles{i+6};
+    title(plotTitle)
+    xlabel('f (Hz)')
+    ylabel('|P1(f)|')
+    xlim([-1 20])
+    ylim([0 0.3])
 end
 
 % -------------------------------------------------------------------------
