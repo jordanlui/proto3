@@ -51,7 +51,7 @@ for i = 1:3
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
     xlim([-1 20])
-    ylim([0 0.1])
+%     ylim([0 0.1])
 
     % Accelerometer fft (stationary)
     subplot(2,3,i+3)
@@ -66,7 +66,7 @@ for i = 1:3
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
     xlim([-1 20])
-    ylim([0 0.1])
+%     ylim([0 0.1])
    
 end
 
@@ -91,7 +91,7 @@ for i = 1:3
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
     xlim([-1 20])
-    ylim([0 0.1])
+%     ylim([0 0.1])
 
     % Gyro fft (stationary)
     subplot(2,3,i+3)
@@ -106,6 +106,6 @@ for i = 1:3
     xlabel('f (Hz)')
     ylabel('|P1(f)|')
     xlim([-1 20])
-    ylim([0 0.1])
+%     ylim([0 0.1])
    
 end

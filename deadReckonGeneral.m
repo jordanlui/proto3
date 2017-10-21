@@ -21,16 +21,15 @@ plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,
 dataTemp = csvread(dataPath,1,0); % Skip the header
 time = dataTemp(:,1);
 packets = dataTemp(:,2);
-acc = dataTemp(:,3:5); % Accelerometer data, g values
+acc = dataTemp(:,3:5); % Accelerometer data, m/s2 values
 gyr = dataTemp(:,6:8); % Gyro data, degrees per second
 accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
-
-% [accCal,gyrCal] = calibrateIMU(acc,gyr); % Note this still needs work
 
 mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calculate frequency from the data
 mcuFreq = floor(mcuFreq); % Integer frequency value
 
 % Calibration values from October 16. 
+gForce_bound = 1.0; % Upper and lower bound value that we will normalize to
 load('calibration_flora_oct5.mat')
 % gyrCal = [6.787350142	-1.984579545	-21.95253208];
 % AccMax = [10.118649	10.043275	11.127223];
@@ -43,11 +42,10 @@ for i = 1:3
 end
 
 % Normalize accelerometer values
-% This will accept accelerometer values in m/s2 and normalize to values
-% beween -1 and 1 g
+% This will accept accelerometer values in m/s2 and normalize to +/- 9.81
 for i = 1:3
     col = acc(:,i);
-    col = 2 * (col - AccMin(i)) / (AccMax(i) - AccMin(i)) - 1;
+    col = 2 * gForce_bound * (col - AccMin(i)) / (AccMax(i) - AccMin(i)) - gForce_bound;
     acc(:,i) = col;
 end
 
