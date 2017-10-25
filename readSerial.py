@@ -1,5 +1,7 @@
 # Simple read from serial port
 # Contains loop timing to end acquisition and then save to a file
+# Works with the Oct 2017 char transmission code from device, which contains time and packet data
+
 
 from __future__ import division
 import serial
@@ -11,12 +13,12 @@ from saveCSV import cleanJSON
 
 
 # Useful variables and system parameters
-mcuFreq = 150 # Microcontroller frequency, in Hz
+mcuFreq = 15 # Microcontroller frequency, in Hz
 mcuPeriod = 1 / mcuFreq # Python loop timing, in seconds
 recordingTime = 10 # Set desired recording time
 
 # Make serial connection
-serial = serial.Serial("COM6", 115200, timeout=0)
+serial = serial.Serial("COM12", 115200, timeout=0)
 if serial:
 	print('connected')
 buffer=[]
@@ -37,7 +39,7 @@ while True:
 		break
 	
 # Save to file
-path = '../Data/IMU_Timing/Flora/'
-filename = 'stationary'
+path = '../Data/oct24/'
+filename = 'moving'
 dataString = ''.join(buffer) # Make a continuous data string out of the buffered pieces
 cleanJSON(dataString,path,filename)

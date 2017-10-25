@@ -25,6 +25,8 @@
   Sept 2017:
   Updating to output accelerometer data ignore the distance Omron sensors
 
+  Output Format: @{"DL1":422,"DS1":67,"DL2":875,"DS2":1023,"AcX":7.797013,"AcY":0.137587,"AcZ":3.945765,"GyX":0.37625,"GyY":2.66875,"GyZ":-6.4225,"Roll":0.921099,"Pitch":-60.31459,"Yaw":-163.3651}{"O8-1":[-25,-25,-25,-25,-25,-25,-25,-25],"O16-1":[22,22,22,21,21,21,21,21,21,21,21,21,21,21,21,21]}{"O8-2":[21,21,22,23,23,23,22,22],"O16-2":[21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21]}
+
 
 */
 
@@ -187,7 +189,7 @@ void SensorData(){
 
   // Adafruit IMU Read
   sensors_event_t accel, mag, gyro, temp;
-
+t
   lsm.getEvent(&accel, &mag, &gyro, &temp); 
   //lsm.read();
   //Save IMU Data to JSON String

@@ -1,6 +1,7 @@
 # Simple read from serial port
 # Contains loop timing to end acquisition and then save to a file
 # Serial read testing for IMU Speed testing
+# Device: Genuino101 with MPU9250?
 
 #import sys
 from __future__ import division

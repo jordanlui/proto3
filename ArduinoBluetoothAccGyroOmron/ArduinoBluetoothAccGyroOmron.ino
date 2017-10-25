@@ -24,6 +24,7 @@
   Update Summary:
   Sept 2017:
   Updating to output accelerometer data ignore the distance Omron sensors
+  Time output in milliseconds
 
 
 */
@@ -42,7 +43,7 @@
 
 int bluetoothTx = 3;  // TX-O pin of bluetooth mate, Arduino D2
 int bluetoothRx = 2;  // RX-I pin of bluetooth mate, Arduino D3
-
+unsigned long t;
 SoftwareSerial bluetooth(bluetoothTx, bluetoothRx);
 
 
@@ -179,7 +180,8 @@ void SensorData(){
   int i = 0;
 
   root["packet"] = packetCount;
-  time_t t = now();
+//  time_t t = now();
+  t = millis();
   root["time"] = t;
 
   //Read from IR sensors
