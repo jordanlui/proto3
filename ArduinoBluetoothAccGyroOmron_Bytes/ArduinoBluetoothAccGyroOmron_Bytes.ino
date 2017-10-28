@@ -30,14 +30,14 @@
 // Variable Setup
 int packet = 0;
 long runtime = 0;
-float DL1;
-float DS1;
-float DL2;
-float DS2;
+int DL1;
+int DS1;
+int DL2;
+int DS2;
 float AcX, AcY, AcZ;
 float GyX, GyY, GyZ;
-int O8tol[8];
-int O16tol[16];
+char O8tol[8];
+char O16tol[16];
 
 //First Loop Check
 //int LoopOne = 0;
@@ -189,36 +189,51 @@ void loop()
   bytes[index++] = (runtime >> 8) & 0xFF;
   bytes[index++] = runtime & 0xFF;
 
-  float2Bytes(DL1, &bytes[index]);
-  index += 4;
-  float2Bytes(DS1, &bytes[index]);
-  index += 4;
-  float2Bytes(DL2, &bytes[index]);
-  index += 4;
-  float2Bytes(DS2, &bytes[index]);
-  index += 4;
+  bytes[index++] = (DL1 >> 8) & 0xFF;
+  bytes[index++] = DL1 & 0xFF; 
+  
+  bytes[index++] = (DS1 >> 8) & 0xFF;
+  bytes[index++] = DS1 & 0xFF; 
+  
+  bytes[index++] = (DL2 >> 8) & 0xFF;
+  bytes[index++] = DL2 & 0xFF; 
+  
+  bytes[index++] = (DS2 >> 8) & 0xFF;
+  bytes[index++] = DS2 & 0xFF; 
+  
   float2Bytes(AcX, &bytes[index]);
   index += 4;
   float2Bytes(AcY, &bytes[index]);
   index += 4;
   float2Bytes(AcZ, &bytes[index]);
   index += 4;
+  float2Bytes(GyX,&bytes[index]);
+  index += 4;
+  float2Bytes(GyY,&bytes[index]);
+  index += 4;
+  float2Bytes(GyZ,&bytes[index]);
+  index += 4;
 
-  for (int i = 0; i < 8; i++) // Omron8
-  {
-    bytes[index++] = (tdata[i] >> 8) & 0xFF;
-    bytes[index++] = tdata[i] & 0xFF;
-  }
-  bytes[index++] = (tdata2[0] >> 8) & 0xFF;
-  bytes[index++] = tdata2[0] & 0xFF;
+//  for (int i = 0; i < 8; i++) // Omron8
+//  {
+//    bytes[index++] = (tdata[i] >> 8) & 0xFF;
+//    bytes[index++] = tdata[i] & 0xFF;
+//  }
+  bytes[index++] = (tdata2[0]) & 0xFF; // Omro4x4
+  bytes[index++] = (tdata2[1]) & 0xFF; 
+  bytes[index++] = (tdata2[2]) & 0xFF; 
+  bytes[index++] = (tdata2[3]) & 0xFF; 
+  bytes[index++] = (tdata2[4]) & 0xFF; 
+  bytes[index++] = (tdata2[5]) & 0xFF; 
+  bytes[index++] = (tdata2[6]) & 0xFF; 
+  bytes[index++] = (tdata2[7]) & 0xFF; 
 
-  for (int i = 1; i < 16; i++) // Omron4x4
+  for (int i = 8; i < 16; i++) // Omron4x4
   {
-    bytes[index++] = (tdata2[i] >> 8) & 0xFF;
     bytes[index++] = tdata2[i] & 0xFF;
   }
 
-  for (int i = 0; i < index; i++)
+  for (int i = 0; i < index; i++) // Checksum generation
   {
     checkSum += bytes[i];
   }
