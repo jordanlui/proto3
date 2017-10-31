@@ -8,7 +8,7 @@ clc;
 
 % Path load files
 % Oct 2 data
-sourceDir = '../Data/oct15/';
+sourceDir = '../Data/oct27/';
 files = dir([sourceDir, '\*.csv']); % Grab the files in directory
 numfiles = length(files(not([files.isdir]))); 
 pickFile = 6; % Pick the file to analyze

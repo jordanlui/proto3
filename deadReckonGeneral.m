@@ -3,7 +3,7 @@
 % More general: Contains HPF and LPF to filter both sides
 % https://github.com/xioTechnologies/Gait-Tracking-With-x-IMU/tree/master/Gait%20Tracking%20With%20x-IMU
 
-function [pos, displacement, maxDisplacement3Axis,accgyr_orig,acc,gyr,vel,mcuFreq] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold)
+function [pos, displacement, maxDisplacement3Axis,accgyr_orig,acc,gyr,vel,mcuFreq] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold, calibrationFile)
 
 addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
 addpath('Libraries/quaternion_library');
@@ -14,6 +14,10 @@ addpath('Libraries');
 % filePath = 'Datasets/straightLine';
 % startTime = 6;
 % stopTime = 26;
+
+if nargin < 5
+    calibrationFile = 'calibration_flora_oct5.mat';
+end
 
 [filepath,name,ext] = fileparts(dataPath);
 plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,stationaryThreshold);
@@ -30,7 +34,7 @@ mcuFreq = floor(mcuFreq); % Integer frequency value
 
 % Calibration values from October 16. 
 gForce_bound = 1.0; % Upper and lower bound value that we will normalize to
-load('calibration_flora_oct5.mat')
+load(calibrationFile);
 % gyrCal = [6.787350142	-1.984579545	-21.95253208];
 % AccMax = [10.118649	10.043275	11.127223];
 % AccMin = [-10.816157	-10.214361	-10.224532];

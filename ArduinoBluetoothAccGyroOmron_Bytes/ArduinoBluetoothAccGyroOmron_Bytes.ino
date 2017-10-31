@@ -246,10 +246,10 @@ void loop()
   bluetooth.write(bytes, index); // Write bytes to Bluetooth
   bluetooth.print("\n\r");
 
-  Serial.write(bytes, index); // Write bytes to Bluetooth
-  Serial.print("\n\r");
+//  Serial.write(bytes, index); // Write bytes to Bluetooth
+//  Serial.print("\n\r");
   ++packet;
-  delay(10);
+  delay(1);
 
 
   //  bluetooth.print('@');
@@ -260,7 +260,7 @@ void loop()
   //  bluetooth.print('\n');
   //  bluetooth.print('%');
 
-}
+}       // End of loop()
 
 ////////
 // Main functions

@@ -1,4 +1,6 @@
 % Analysis on various proto recordings, sept24, oct2, etc.
+% Comparing motion analysis oct 15 with some stationary data. Testing
+% parameters to see if drift happens, and see if how filters perform
 
 close all;                     	% close all figures
 clear;                         	% clear all variables
