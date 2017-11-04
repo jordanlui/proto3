@@ -23,7 +23,7 @@ end
 plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,stationaryThreshold);
 
 dataTemp = csvread(dataPath,0,0); 
-time = dataTemp(:,2);
+time = dataTemp(:,2); % time in ms
 packets = dataTemp(:,1);
 acc = dataTemp(:,7:9); % Accelerometer data, m/s2 values
 gyr = dataTemp(:,10:12); % Gyro data, degrees per second
@@ -55,9 +55,9 @@ end
 
 %% Before and after analysis of acc and gyro data
 
-% FFT Plots of Accelerometer and Gyro
+% FFT Plots of Accelerometer and Gyro, comparing original and calibrated
 M = length(dataTemp);
-acc_both = [dataTemp(:,3:5) acc];
+acc_both = [dataTemp(:,3:5) acc]; % Original and calibrated data
 gyr_both = [dataTemp(:,6:8) gyr];
 figure(1)
 for i = 1:6 % Accelerometer data
@@ -151,12 +151,17 @@ acc_magFilt = abs(acc_magFilt);
 wnLPF = (2*filtLPF)/(1/samplePeriod);
 [b, a] = butter(1, wnLPF, 'low');
 acc_magFilt = filtfilt(b, a, acc_magFilt);
+
+acc_magFilt = -1 * acc_magFilt; % Temporarily reflect our data
+% acc_magFilt = acc_magFilt - min(acc_magFilt);
 plot(acc_magFilt)
+
+
 
 stationary = acc_magFilt < stationaryThreshold;
 plot(stationary)
 hold off
-legend({'acc_mag','acc_mag HPF','acc_mag BPF'},'Interpreter', 'none')
+legend({'acc_mag','acc_mag HPF','acc_mag BPF', 'Stationary detection'},'Interpreter', 'none')
 title('Accelerometer values: Raw and Filtered')
 
 % Method 2: IIR Filter 
