@@ -14,6 +14,7 @@ import argparse
 import imutils
 import cv2
 import time
+import pickle
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -27,27 +28,31 @@ args = vars(ap.parse_args())
 camera_address = 1 # 1 for the USB webcam, 0 for the onboard webcam
 minRadius = 7 # Minimum radius of the circle
 outputFilename = "track3point.txt"
+calData = 'menrvalabfloor.pkl'
 
-# define the lower and upper boundaries of the "green"
-# ball in the HSV (RGB??) color space, then initialize the
-# list of tracked points
-#greenLower = (0,98,114)			# Red tracker in Surrey 4040
-#greenUpper = (214,160,204)	
-#greenLower = (156,142,139) # Webcam on table in Menrva
-#greenUpper = (186,247,255)	
+font = cv2.FONT_HERSHEY_SIMPLEX
 
-greenLower = (68,89,67)			# Track Green in Surrey 3666, lights on
-greenUpper = (113,220,130)		
-tLower1 = (68,89,67)			# Track Green in Surrey 3666, lights on
-tUpper1 = (113,220,130)	
-tLower2 = (87,96,110)			# Track Blue Surrey 3666
-tUpper2 = (132,221,219)	
+# Colour thresholds
+
+with open(calData) as file:
+	[tLower, tUpper] = pickle.load(file)
+
+#greenLower = (68,89,67)			# Track Green in Surrey 3666, lights on
+#greenUpper = (113,220,130)		
+#tLower1 = (68,89,67)			# Track Green in Surrey 3666, lights on
+#tUpper1 = (113,220,130)	
+#tLower2 = (87,96,110)			# Track Blue Surrey 3666
+#tUpper2 = (132,221,219)	
+#
+#tLower1 = (57,106,57)			# MENRVA Green
+#tUpper1 = (89,255,126)	
+#tLower2 = (77,122,151)			# MENRVA Blue
+#tUpper2 = (136,226,255)	
 
 pts = deque(maxlen=args["buffer"])
-#Green Egg Works better than the Pink one
 
-# if a video path was not supplied, grab the reference
-# to the webcam
+# if a video path was not supplied, grab the reference to webcam
+
 if not args.get("video", False):
 	camera = cv2.VideoCapture(camera_address)
 
@@ -108,17 +113,15 @@ while True:
 	# construct a mask for the color "green", then perform
 	# a series of dilations and erosions to remove any small
 	# blobs left in the mask
-	mask = cv2.inRange(hsv, greenLower, greenUpper)
-	mask = cv2.erode(mask, None, iterations=2)
-	mask = cv2.dilate(mask, None, iterations=2)
+
 	
-	mask1 = cv2.inRange(hsv, tLower1, tUpper1)
-	mask1 = cv2.erode(mask, None, iterations=2)
-	mask1 = cv2.dilate(mask, None, iterations=2)
+	mask1 = cv2.inRange(hsv, tLower[0], tUpper[0])
+	mask1 = cv2.erode(mask1, None, iterations=2)
+	mask1 = cv2.dilate(mask1, None, iterations=2)
 	
-	mask2 = cv2.inRange(hsv, tLower2, tUpper2)
-	mask2 = cv2.erode(mask, None, iterations=2)
-	mask2 = cv2.dilate(mask, None, iterations=2)
+	mask2 = cv2.inRange(hsv, tLower[1], tUpper[1])
+	mask2 = cv2.erode(mask2, None, iterations=2)
+	mask2 = cv2.dilate(mask2, None, iterations=2)
 
 	# find contours in the mask and initialize the current
 	# (x, y) center of the ball
@@ -162,9 +165,10 @@ while True:
 		if radius > minRadius:
 			# draw the circle and centroid on the frame,
 			# then update the list of tracked points
-			cv2.circle(frame, (int(x), int(y)), int(radius),
+			cv2.circle(frame, center1, int(radius),
 				(0, 255, 255), 2)
 			cv2.circle(frame, center1, 5, (0, 0, 255), -1)
+			cv2.putText(frame,'*',center1,font,1,(255,255,0),2,cv2.LINE_AA)
 			
 		if radius2 > minRadius:
 			# draw the circle and centroid on the frame,
@@ -172,6 +176,8 @@ while True:
 			cv2.circle(frame, (int(x2), int(y2)), int(radius2),
 				(0, 150, 150), 2)
 			cv2.circle(frame, center2, 5, (0, 0, 150), -1)
+			cv2.putText(frame,'*',(int(x2), int(y2)),font,1,(255,255,0),2,cv2.LINE_AA)
+			
 
 	# update the points queue
 	pts.appendleft(center1)
@@ -196,13 +202,13 @@ while True:
 		# only proceed if the radius meets a minimum size
 		if radius3 > minRadius:
 			# draw the circle and centroid on the frame,
-			# then update the list of tracked points
 			cv2.circle(frame, (int(x3), int(y3)), int(radius3),
 				(0, 255, 0), 2)
-			cv2.circle(frame, center3, 5, (255, 0, 255), -1)
+#			cv2.circle(frame, center3, 5, (255, 0, 255), -1)
+			cv2.putText(frame,'x',(int(x3), int(y3)),font,1,(0,255,0),2,cv2.LINE_AA)
 			
 		
-	# loop over the set of tracked points and draw a line
+	# loop over the set of tracked points (thresh1) and draw a line between
 	for i in xrange(1, len(pts)):
 		# if either of the tracked points are None, ignore
 		# them
@@ -211,17 +217,25 @@ while True:
 
 		# otherwise, compute the thickness of the line and
 		# draw the connecting lines
-		thickness = int(np.sqrt(args["buffer"] / float(i + 1)) * 2.5)
+		thickness = int(np.sqrt(args["buffer"] / float(i + 1)) * 1.5)
 		cv2.line(frame, pts[i - 1], pts[i], (0, 0, 255), thickness)
 
 	# show the frame to our screen
 	cv2.imshow("Frame", frame)
 	key = cv2.waitKey(1) & 0xFF
 	
-	if len(cnts1) > 1 or len(cnts3) > 0:
-		msgFull = "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f" % (x, y, x2, y2, distance ,x3, y3)
-		print msgFull
-		text_file.write(msgOut)
+	if len(cnts1) <2: # If we fail to capture the two tracker points
+		x=-1
+		y=-1
+		x2=-1
+		y2=-1
+		distance=-1
+	if len(cnts3) <1 : # If we fail to capture the third tracker point
+		x3=-1
+		y3=-1
+	msgFull = "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n" % (x, y, x2, y2, distance ,x3, y3)
+	print(msgFull)
+	text_file.write(msgFull)
 	
 	# write the frame
 	video.write(frame)

@@ -13,7 +13,7 @@ from sklearn.svm import SVR
 
 
 path = '../data/nov3/'
-filename = 'swing1.csv'
+filename = 'forward2.csv'
 coordPrefix = 'coords_'
 IRFullPath = path + filename
 coordFullPath = path + coordPrefix + filename
@@ -81,7 +81,6 @@ def svmRegression(X,y):
     plt.show()
     return y_rbf, y_lin, y_poly
     
-    
 
 #%% Main Loop
 	
@@ -99,10 +98,6 @@ for i in [0,4,8,12]:
 omronHoriz = []
 for i in range(0,4):
 	omronHoriz.append(omron[:,(i,i+4,i+8,i+12)])
-
-
-
-
 #x = np.hstack((IR,coord)) # All values
 #%% Plot Sensor values with time
 
@@ -110,9 +105,10 @@ fig1 = plt.figure(1)
 fig1, axarr = plt.subplots(3, sharex=True)
 axarr[0].plot(time,distance)
 axarr[0].set_title('Reach distance, cm')
-axarr[1].plot(time,omron[:,4:12])
+#axarr[1].plot(time,omron[:,4:12])
+axarr[1].plot(time,omron[:,:])
 axarr[1].set_title('Omron')
-axarr[2].plot(time,sharp[:,0])
+axarr[2].plot(time,sharp[:,:])
 axarr[2].set_title('Sharp')
 fig1.suptitle('Sensor values with time for %s'%filename, fontsize=16)
 
@@ -159,11 +155,11 @@ for i in range(0,4):
 fig4.suptitle('Omron columns with distance normalized to distal value, columwise for %s'%filename, fontsize=16)
 
 #%% Save to file
-pathOut = '../Analysis/nov3/'
-t = distance
-x = IR[:,2:-1]
-np.savetxt(pathOut + 't1.csv',t,delimiter=',')
-np.savetxt(pathOut + 'x1.csv',x,delimiter=',')
+#pathOut = '../Analysis/nov3/forward/'
+#t = distance
+#x = IR[:,2:-1]
+#np.savetxt(pathOut + 't3.csv',t,delimiter=',')
+#np.savetxt(pathOut + 'x3.csv',x,delimiter=',')
 
 #%% Machine Learning analysis
 

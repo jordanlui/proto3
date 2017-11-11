@@ -3,7 +3,7 @@
 Created on Fri Nov 03 15:15:09 2017
 
 @author: Jordan
-Track position on webcam and read from prototype device
+Track position on webcam and read from prototype device, outputting to a single file
 """
 
 # USAGE
@@ -11,6 +11,7 @@ Track position on webcam and read from prototype device
 # python script.py
 # OpenCV3 required! There are a few lines below that will not work in OpenCV2
 # This script is configured to track two points and return the coordinate values and a distance calculation
+# Currently saves results to two different files
 
 # Packages
 from __future__ import division
@@ -55,7 +56,7 @@ fourcc = cv2.VideoWriter_fourcc(*'XVID')
 size = (640,480)
 video = cv2.VideoWriter('output.avi',fourcc, 30.0, size)
 # Define and Open coordinates text file
-text_file = open("OutputTest.txt", "w")
+text_file = open("OutputTest.txt", "w") # Destiation of coordinate data
 text_file.close()
 # END OF WEBCAM SETUP
 
@@ -68,7 +69,7 @@ mcuPeriod = 1 / mcuFreq # Python loop timing, in seconds
 # Run parameters
 testLength = 10 #loop will run for testLength seconds
 pathout = '../Data/nov3/'
-filename = 'random_offtable2.csv'
+filename = 'random_offtable2.csv' # Device data output
 filenameCoords = 'coords_' + filename
 fullpathOut = pathout + filename
 fullpathOutCoords = pathout + filenameCoords
