@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 
 #%% Load Datasets
 path = 'forward'
-files = glob.glob(path+'/XX*.csv')
+files = glob.glob('../Analysis/nov3/' + path+ '/XX*.csv')
 XX = []
 Xlist = []
 Ylist = []
@@ -50,7 +50,7 @@ for file in files:
     Xlist.append(Xtemp)
     Ylist.append(Ytemp)
 #XX = numpy.genfromtxt('forward/XX1.csv',delimiter=',')
-numFeat = Xtemp.shape[1] # Should be 26
+#numFeat = Xtemp.shape[1] # Should be 26
 
 #X = numpy.genfromtxt('forward/x3.csv',delimiter=',')
 #Y = numpy.genfromtxt('forward/t3.csv',delimiter=',')
@@ -180,6 +180,7 @@ resultsWide = []
 
 for X,Y,file in zip(Xlist,Ylist,files):
 #    numFeat = x.shape[1]
+	numFeat = X.shape[1]
 	print('Analysis on %s'%file)
 	print( X.shape, Y.shape)
 	resultsStd.append(runBaseline(X,Y))
