@@ -4,6 +4,10 @@ Created on Sat Nov 04 10:00:41 2017
 
 @author: Jordan
 Results analysis Nov 3
+Basic data loading of this data, checking timestamps agree between coord file 
+and proto data, and saving to file.
+Some basic plotting is done as well to look for correlations between sensor data
+and movements.
 """
 from __future__ import division
 import numpy as np
@@ -11,9 +15,9 @@ import glob, os
 import matplotlib.pyplot as plt
 from sklearn.svm import SVR
 
-
+print(__doc__)
 path = '../data/nov3/'
-filename = 'forward2.csv'
+filename = 'forward3.csv'
 coordPrefix = 'coords_'
 IRFullPath = path + filename
 coordFullPath = path + coordPrefix + filename
@@ -42,12 +46,12 @@ def loadBothFiles(IRFullPath,coordFullPath):
 	timeDevice = (IR[-1,-1] - IR[0,-1])
 	timeCoord = coord[-1,0] - coord[0,0]
 	
-	print 'device times are', timeArduino, timeDevice, timeCoord
+	print 'Arduino and proto record durations are', timeArduino, timeDevice, timeCoord
 	
 	coordTimes = coord[:,0]
 	deviceTimes = IR[:,-1]
 	
-	if np.abs(deviceTimes[0] - coordTimes[0]) < timeDeltaThreshold:
+	if np.abs(deviceTimes[0] - coordTimes[0]) < timeDeltaThreshold: # Check time coordination
 		print 'start time is nearly synchronized'
 		if len(coordTimes) > len(deviceTimes):
 			print 'webcam length longer. will be truncated'
@@ -98,7 +102,7 @@ for i in [0,4,8,12]:
 omronHoriz = []
 for i in range(0,4):
 	omronHoriz.append(omron[:,(i,i+4,i+8,i+12)])
-#x = np.hstack((IR,coord)) # All values
+	#x = np.hstack((IR,coord)) # All values
 #%% Plot Sensor values with time
 
 fig1 = plt.figure(1)
@@ -155,7 +159,7 @@ for i in range(0,4):
 fig4.suptitle('Omron columns with distance normalized to distal value, columwise for %s'%filename, fontsize=16)
 
 #%% Save to file
-#pathOut = '../Analysis/nov3/forward/'
+#pathOut = '../Analysis/nov3/swing/'
 #t = distance
 #x = IR[:,2:-1]
 #np.savetxt(pathOut + 't3.csv',t,delimiter=',')

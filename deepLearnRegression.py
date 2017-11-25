@@ -3,8 +3,11 @@
 Created on Mon Nov 06 23:17:45 2017
 
 @author: Jordan
-https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
 
+Deep Learning Analysis on nov 3 IR data
+
+Code base from:
+https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
 Loads multiple files and performs varying levels of Deep learning analysis on each file, printing out results for each
 
 """
@@ -23,17 +26,17 @@ import glob, os
 import pickle, shelve
 import matplotlib.pyplot as plt
 
-
-#%% Try Model with Adam's deep learning data example for housing data
-#dataframe = pandas.read_csv("housing.csv", delim_whitespace=True, header=None)
-#dataset = dataframe.values
-### split into input (X) and output (Y) variables
-#X = dataset[:,0:13]
-#Y = dataset[:,13]
+print(__doc__)
 
 #%% Load Datasets
-path = 'forward'
-files = glob.glob('../Analysis/nov3/' + path+ '/XX*.csv')
+files = []
+path = 'diag'
+files.append(glob.glob(path+'/XX*.csv'))
+path = 'swing'
+files.append(glob.glob(path+'/XX*.csv'))
+path = 'lateral'
+files.append(glob.glob(path+'/XX*.csv'))
+files = [singlefile for file in files for singlefile in file] # Flatten the list
 XX = []
 Xlist = []
 Ylist = []
@@ -50,7 +53,7 @@ for file in files:
     Xlist.append(Xtemp)
     Ylist.append(Ytemp)
 #XX = numpy.genfromtxt('forward/XX1.csv',delimiter=',')
-#numFeat = Xtemp.shape[1] # Should be 26
+numFeat = Xtemp.shape[1] # Should be 26
 
 #X = numpy.genfromtxt('forward/x3.csv',delimiter=',')
 #Y = numpy.genfromtxt('forward/t3.csv',delimiter=',')
@@ -172,22 +175,21 @@ def restoreWorkspace(path):
 	    globals()[key]=my_shelf[key]
 	my_shelf.close()
 #%% Main Loop
-numFeat = 26
-loopStartTime = time.time()
+#numFeat = 26
+t0 = time.time()
 resultsStd = []
 resultsLarge = []
 resultsWide = []
 
 for X,Y,file in zip(Xlist,Ylist,files):
 #    numFeat = x.shape[1]
-	numFeat = X.shape[1]
 	print('Analysis on %s'%file)
 	print( X.shape, Y.shape)
 	resultsStd.append(runBaseline(X,Y))
 	resultsLarge.append(runLarge(X,Y))
 	resultsWide.append(runWide(X,Y))
     
-print('Overall runtime was %.2f'%(time.time() - loopStartTime))
+print('Overall runtime was %.2f'%(time.time() - t0))
 
 #%% Results analysis
 
@@ -229,9 +231,8 @@ workspaceSavePath = path + '.out'
 #saveWorkspace(workspaceSavePath) # Shelf method
 
 import dill                            #pip install dill --user
-filename = path + '_workspace.pkl'
+filename = 'swinglatdiag' + '_workspace.pkl'
 dill.dump_session(filename)
 # dill.load_session(filename) # To load 
 #%% Try Dill Pickle
 restoreWorkspace('unsure.out')
-
