@@ -22,25 +22,22 @@ print(__doc__)
 #%% Run parameters - change these to target different files
 path = '../data/nov3/'
 filename = 'swing3.csv'
+coordPrefix = 'coords_' # Prefix for the webcam coordinates
 
-#%% Calculated parameters
-folderOut = re.findall('([a-z]+)[0-9]*\.csv',filename)[0]
+filenames = ['forward','forward2','forward3','lateral','lateral2','lateral3','diag','diag2','diag3','swing1','swing2','swing3']
+filenames = [i+'.csv' for i in filenames]
 
-try:
-	num = re.findall('[a-z]+([0-9])+\.csv',filename)[0]
-except:
-	num = 1
+#folderOut = re.findall('([a-z]+)[0-9]*\.csv',filename)[0]
+#try:
+#	num = re.findall('[a-z]+([0-9])+\.csv',filename)[0]
+#except:
+#	num = 1
 		
-
-coordPrefix = 'coords_'
-#IRFullPath = path + filename
-#coordFullPath = path + coordPrefix + filename
-
+filelist=[]
 timeDeltaThreshold = 0.1
 distChestTable = 18 # distance from chest to marker, in cm
 scaleCameraTable = 73.298 / 5.0 # Calibration, pixels / cm
 
-filelist = []
 
 #%% Functions
 for file in glob.glob(path+'*.csv'):
@@ -78,7 +75,9 @@ def loadBothFiles(IRFullPath,coordFullPath):
 
 def fixAnchorPosition(coord):
 	np.median(coord,axis=0)
-	anchor = stats.mode((np.round(coord[:,1:5],0)))
+	oldCoord = coord[:,1:5] # Take just coord values. Ignore time value and distance
+	newCoord = np.zeros((oldCoord.shape))
+	anchor = stats.mode((np.round(oldCoord,0)))
 	if anchor.mode[0][0] == anchor.mode[0][2] and anchor.mode[0][1] == anchor.mode[0][3]:
 		anchorPos = (anchor.mode[0][0],anchor.mode[0][1])
 		print 'Anchor located at (%i,%i), position agreed upon based on mode'%(int(anchorPos[0]),int(anchorPos[1]))
@@ -89,21 +88,19 @@ def fixAnchorPosition(coord):
 		else:
 			anchorPos = (anchor.mode[0][2],anchor.mode[0][3])
 		
-	#if np.sum(anchor.count[0:2]) > np.sum(anchor.count[2:]):
-		
 	
-	oldCoord = coord[:,1:5]
-	newCoord = np.zeros((oldCoord.shape))
 	for i in range(len(oldCoord)):
 		if np.sqrt( (oldCoord[i,0] - anchorPos[0])**2 + (oldCoord[i,1] - anchorPos[1])**2) < np.sqrt( (oldCoord[i,2] - anchorPos[0])**2 + (oldCoord[i,3] - anchorPos[1])**2):
 			# Then Point 1 is the anchor. Don't change
 			newCoord[i,:] = oldCoord[i,:]
 		else:
 			# Then Point 2 is anchor, and we want to swap
-			newCoord[i,:] = np.array([oldCoord[0,2],oldCoord[0,3],oldCoord[0,0],oldCoord[0,1]])
-			
+			newCoord[i,:] = np.array([oldCoord[i,2],oldCoord[i,3],oldCoord[i,0],oldCoord[i,1]])
+#			print 'swap!',newCoord[i,:]
+#	print newCoord[:10,:], '\n', oldCoord[:10,:]
 	coord[:,1:5] = newCoord	
 	return coord
+
 def plotSensorsTime(time,distance,omron,sharp):
 	fig1 = plt.figure(1)
 	fig1, axarr = plt.subplots(3, sharex=True)
@@ -117,7 +114,7 @@ def plotSensorsTime(time,distance,omron,sharp):
 	fig1.suptitle('Sensor values with time for %s'%filename, fontsize=16)
 	
 def plotSpatial(coord):
-	fig5 = plt.figure(5)
+	plt.figure(5)
 
 	plt.scatter(coord[:,1],coord[:,2], marker='.')
 	plt.scatter(coord[:,3],coord[:,4], marker = '^')
@@ -166,6 +163,16 @@ def OmronFeatures(omron):
 	for i in range(0,4):
 		omronHoriz.append(omron[:,(i,i+4,i+8,i+12)])
 	return omronVert, omronHoriz
+
+def savetoFile(t,IR,folderOut):
+	pathOut = '../Analysis/nov3/' + folderOut + '/'
+	if len(t.shape)==1:
+		t = np.reshape(t,(len(t),1))
+	x = IR[:,2:-1]
+	
+	np.savetxt(pathOut + 't' + str(num) + '.csv',t,delimiter=',')
+	np.savetxt(pathOut + 'x' + str(num) + '.csv',x,delimiter=',')
+	np.savetxt(pathOut + 'XX' + str(num) + '.csv',np.hstack((x,t)),delimiter=',')
 #%% Main Loop
 
 def main():
@@ -181,31 +188,32 @@ def main():
 	time = IR[:,-1] # Time values since 1901
 	time = time - min(time) # Relative time values in seconds
 
-
 	coord = fixAnchorPosition(coord) # Fixing Coordinate jumping
-	omronVert, omronHoriz = OmronFeatures(omron)
+	positionDistance = coord[:,1:] # Position and distance data, cleaned
+	omronVert, omronHoriz = OmronFeatures(omron) # Make new features
 		
-	plotSensorsTime(time,distance,omron,sharp) # Plot with time
-	plotSpatial(coord) # Spatial coordinate plot
-
-	plotSharpCorrelation(distance,sharp) # Sharp IR Correlation Plots
-	#%% 
-	plotOmronCorrelation(distance,omronVert,omronHoriz) # Omron Correlation Plots
-	return omron, omronVert, omronHoriz
+#	plotSensorsTime(time,distance,omron,sharp) # Plot with time
+#	plotSpatial(coord) # Spatial coordinate plot
+#	plotSharpCorrelation(distance,sharp) # Sharp IR Correlation Plots
+#	plotOmronCorrelation(distance,omronVert,omronHoriz) # Omron Correlation Plots
+	
+	savetoFile(positionDistance,IR,folderOut) # Save to file
+	return coord, IR, omron, omronVert, omronHoriz
 #%% Main Loop
 
+if filenames:
+	for filename in filenames:
+		
+		folderOut = re.findall('([a-z]+)[0-9]*\.csv',filename)[0]
+		try:
+			num = re.findall('[a-z]+([0-9])+\.csv',filename)[0]
+		except:
+			num = 1
+		
+		main()
 
-main()
-
-#%% Save to file
-#pathOut = '../Analysis/nov3/' + folderOut + '/'
-#t = distance
-#t = np.reshape(t,(len(t),1))
-#x = IR[:,2:-1]
-#
-#np.savetxt(pathOut + 't' + str(num) + '.csv',t,delimiter=',')
-#np.savetxt(pathOut + 'x' + str(num) + '.csv',x,delimiter=',')
-#np.savetxt(pathOut + 'XX' + str(num) + '.csv',np.hstack((x,t)),delimiter=',')
+#%% Single
+coord, IR, omron, omronVert, omronHoriz = main()
 
 #%% Machine Learning analysis
 

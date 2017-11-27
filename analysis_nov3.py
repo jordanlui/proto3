@@ -1,148 +1,249 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov 04 10:00:41 2017
+Created on Mon Nov 06 23:17:45 2017
 
 @author: Jordan
-Results analysis Nov 3
-Basic data loading of this data, checking timestamps agree between coord file 
-and proto data, and saving to file.
-Some basic plotting is done as well to look for correlations between sensor data
-and movements.
+
+Machine Learning Analysis on nov 3 IR data
+
+Code base from:
+https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
+Loads multiple files and performs varying levels of Deep learning analysis on each file, printing out results for each
+
 """
+
 from __future__ import division
+#from analysisFunctions import *
+
+import numpy
 import numpy as np
-import glob, os
+#import pandas
+
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+from time import time
+import logging
 import matplotlib.pyplot as plt
-from sklearn.svm import SVR
+import matplotlib.mlab as mlab
+
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.datasets import fetch_lfw_people
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.decomposition import PCA
+from sklearn.svm import SVC, SVR
+from scipy import stats
+import scipy
+
+scaleCameraTable = 73.298 / 5.0 # Scale for system, pixels/cm. From Nov 3?
+#import time
+import glob, os
+import pickle, shelve
+import matplotlib.pyplot as plt
 
 print(__doc__)
-path = '../data/nov3/'
-filename = 'swing1.csv'
-coordPrefix = 'coords_'
-IRFullPath = path + filename
-coordFullPath = path + coordPrefix + filename
 
-timeDeltaThreshold = 0.1
-distChestTable = 18 # distance from chest to marker, in cm
-scaleCameraTable = 73.298 / 5.0 # Calibration, pixels / cm
+#%% Load Datasets
 
-filelist = []
+files = []
+path = 'forward'
+files.append(glob.glob(path+'/XX*.csv'))
+path = 'swing'
+files.append(glob.glob(path+'/XX*.csv'))
+path = 'lateral'
+files.append(glob.glob(path+'/XX*.csv'))
+path = 'diag'
+files.append(glob.glob(path+'/XX*.csv'))
+files = [singlefile for file in files for singlefile in file] # Flatten the list
+XX = []
+Xlist = []
+Ylist = []
+
+seed = 7 # fix random seed for reproducibility
+
+for file in files:
+    XXtemp = numpy.genfromtxt(file,delimiter=',')
+    XX.append(XXtemp)
+    Xtemp = XXtemp[:,:-5] # Remove last 5 columns (anchor, tag, distance)
+    Ytemp = XXtemp[:,-5:]
+    Ytemp = Ytemp/ scaleCameraTable # Change distances from pixels to cm
+    
+    Xlist.append(Xtemp)
+    Ylist.append(Ytemp)
+#XX = numpy.genfromtxt('forward/XX1.csv',delimiter=',')
+numFeat = Xtemp.shape[1] # Should be 26
+
+
 
 #%% Functions
-for file in glob.glob(path+'*.csv'):
-	if os.path.basename(file) == 'coords_*.csv':
-		# Do nothing, don't import this file
-		print 'readme.txt detected, skipped'
+
+
+def saveWorkspace(workspaceSavePath):
+	my_shelf = shelve.open(workspaceSavePath,'n') # 'n' for new
+
+	for key in dir():
+	    try:
+	        my_shelf[key] = globals()[key]
+	    except TypeError:
+	        #
+	        # __builtins__, my_shelf, and imported modules can not be shelved.
+	        #
+	        print('ERROR shelving: {0}'.format(key))
+	my_shelf.close()
+	return
+
+def restoreWorkspace(path):
+	my_shelf = shelve.open(path)
+	for key in my_shelf:
+	    globals()[key]=my_shelf[key]
+	my_shelf.close()
+	
+	
+def SVR_Optimize(X_train,y_train):
+	print("Optimize system for best C, gamma values")
+	t0 = time()
+	param_grid = {'C': [1e3, 5e3, 1e4, 5e4, 1e5],
+	              'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
+	clf = GridSearchCV(SVR(kernel='rbf', gamma=0.1), param_grid)
+	clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
+	clf = clf.fit(X_train, y_train)
+	print("done in %0.3fs" % (time() - t0))
+	print("Best estimator found by grid search:")
+	print(clf.best_estimator_)
+	return clf
+		
+def plotHistogram(x,comment):
+	n, bins, patches = plt.hist(x, 50, normed=1, facecolor='green', alpha=0.75)
+#	plt.xlabel('Error Value (cm)')
+	plt.ylabel('Occurrence')
+	titleString = 'Histogram, ' + comment
+	plt.title(titleString)
+	#plt.grid(True)
+	plt.show()
+	return
+
+def calcStats(x):
+	outputString = 'max %.2f, min %.2f, mean: %.2f, median: %.2f, stdev: %.2f'%(np.max((x)), np.min((x)),np.mean((x)), np.median((x)), np.std(x))
+	print outputString
+	return np.max((x)), np.min((x)),np.mean((x)), np.median((x)), np.std(x)
+
+def binPlot(x,y,bins=6):
+	# Accepts two vectors, bins the data and plots
+	# Also returns the values of the bins (x-axis)
+	if len(x) == len(y):
+		results = scipy.stats.binned_statistic(x,y,statistic='mean',bins=bins)
+#		N = bins
+		ind = []
+		ind2 = []
+		for i in range(len(results.bin_edges)-1):
+			ind.append(np.mean((results.bin_edges[i:i+2]))) # Index label based on midpoint
+			ind2.append('%.0f-%.0f'%(results.bin_edges[i],results.bin_edges[i+1])) # Index label string based on start-end indices
+		ind = np.round(ind,decimals=1)
+		width = 1
+		fig, ax = plt.subplots()
+		ax.bar(ind,results.statistic,width,color='r')
+		ax.set_title('Binned error ',fontsize=16)
+		ax.set_ylabel('Mean Error (cm)')
+		ax.set_xlabel('Distance (cm)')
+		plt.show()
+		return results, ind, ind2
 	else:
-		filelist.append(file)
-file = 0
-
-def loadBothFiles(IRFullPath,coordFullPath):
-
-	IR = np.genfromtxt(IRFullPath,delimiter=',')
-	coord = np.genfromtxt(coordFullPath,delimiter=',')
+		print('error! mismatch length!')
+		return
+def boxPlot(results,y,ind):
+	# Box plot of data
+	bins = len(results.statistic)
+	data = []
+	for i in range(bins): # Loop through bins
+		mask=results.binnumber-1 == i # Create mask
+		binvalues = np.ma.array(y,mask=~mask) # Grab the values for that mask
+		data.append(binvalues.compressed()) # Add values to a list
 	
-	timeArduino = (IR[-1,1] - IR[0,1]) / 1000
-	timeDevice = (IR[-1,-1] - IR[0,-1])
-	timeCoord = coord[-1,0] - coord[0,0]
-	
-	print 'Arduino and proto record durations are', timeArduino, timeDevice, timeCoord
-	
-	coordTimes = coord[:,0]
-	deviceTimes = IR[:,-1]
-	
-	if np.abs(deviceTimes[0] - coordTimes[0]) < timeDeltaThreshold: # Check time coordination
-		print 'start time is nearly synchronized'
-		if len(coordTimes) > len(deviceTimes):
-			print 'webcam length longer. will be truncated'
-			coordTimesClipped = coordTimes[0:len(deviceTimes)]
-			coordClipped = coord[0:len(deviceTimes)]
-	
-	timeDelta = coordTimesClipped - deviceTimes# Check overall time error between the two
-	print 'time delta max, median, mean are',np.max(timeDelta), np.median(timeDelta), np.mean(timeDelta)
-	return IR, coordClipped
+	fig,ax = plt.subplots()
+	ax.boxplot(np.abs(data),labels=ind)
+	ax.set_title('Error Distribution at different distances')
+	ax.set_ylabel('Error values (cm)')
+	ax.set_xlabel('Distance(cm)')
+	plt.show()
+	return
 
 #%% Main Loop
+#numFeat = 26
+startTime = time()
+rSquares = [] # R2 values
+error = [] # Error values
+errorRel = []
+testData = []
+
+for X,Y,file in zip(Xlist,Ylist,files):
+#    numFeat = x.shape[1]
+	print('Analysis on %s'%file)
+	print( X.shape, Y.shape)
+	n_features = X.shape[1]
+	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25, random_state=42)
+	testData.append(y_test[:,-1])
 	
-IR, coord = loadBothFiles(IRFullPath,coordFullPath) # Load the coord and IR data and combine together, truncate as necessary
-distance = coord[:,-1]
-sharp = IR[:,2:6]
-acc = IR[:,6:9]
-gyr = IR[:,9:12]
-omron = IR[:,12:28]
-time = IR[:,-1] # Time values since 1901
-time = time - min(time) # Relative time values in seconds
+	clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
+	clf = clf.fit(X_train, y_train[:,-1])
+	
+	print("Predicting on the test set, SVR")
+	t0 = time()
+	y_pred = clf.predict(X_test)
+	y_error = y_test[:,-1] - y_pred # Error in prediction, cm
+	error.append(y_error) # Save error values for each trial
+	errorRel.append(np.abs(y_error)/y_test[:,-1]) # Relative error values
+	errorMean = np.mean(np.abs(y_error)) # Mean absolute error, cm
+	print("done in %0.3fs" % (time() - t0))
+	rSquared = clf.score(X_test,y_test[:,-1]) # R2 value
+	rSquares.append(rSquared)
+	  
+print('Overall runtime was %.2f'%(time() - startTime))
 
-#%% New Features: Omron Column, Row data
-omronVert = [] # Array of Omron columns, from distal to proximal
-for i in [0,4,8,12]:
-	omronVert.append(omron[:,i:i+4])
-omronHoriz = []
-for i in range(0,4):
-	omronHoriz.append(omron[:,(i,i+4,i+8,i+12)])
-	#x = np.hstack((IR,coord)) # All values
-#%% Plot Sensor values with time
+#%% Results analysis
+errorMeans = [np.mean(np.abs(i)) for i in error] # Mean error values for all trials
+errorMedian = [np.median(np.abs(i)) for i in error] # Mean error values for all trials
 
-fig1 = plt.figure(1)
-fig1, axarr = plt.subplots(3, sharex=True)
-axarr[0].plot(time,distance)
-axarr[0].set_title('Reach distance, cm')
-#axarr[1].plot(time,omron[:,4:12])
-axarr[1].plot(time,omron[:,:])
-axarr[1].set_title('Omron')
-axarr[2].plot(time,sharp[:,:])
-axarr[2].set_title('Sharp')
-fig1.suptitle('Sensor values with time for %s'%filename, fontsize=16)
 
-#%% Spatial coordinate plot
-fig5 = plt.figure(5)
+allError = [i for trial in error for i in trial] # Errors in distance predictions
+distances = [i for trial in testData for i in trial] # Actual distances
+plotHistogram(allError, 'Error in cm') # Histogram of error
+calcStats(np.abs(allError))
 
-plt.scatter(coord[:,1],coord[:,2], marker='.')
-plt.scatter(coord[:,3],coord[:,4], marker = '^')
-plt.title('Coordinates of markers',fontsize=16)
+allErrorRel = [i for trial in errorRel for i in trial]
+plotHistogram(allErrorRel,'Relative error') # Histogram of normalized/relative error
+calcStats(np.abs(allErrorRel))
 
-#%% Sharp IR Correlation Plots
-fig2 = plt.figure(2)
-fig2, axarr = plt.subplots(4, sharex=True)
-axarr[0].scatter(distance,sharp[:,0])
-axarr[0].set_title('sharp1')
-axarr[1].scatter(distance,sharp[:,1])
-axarr[1].set_title('sharp2')
-axarr[2].scatter(distance,sharp[:,2])
-axarr[2].set_title('sharp3')
-axarr[3].scatter(distance,sharp[:,3])
-axarr[3].set_title('sharp4')
-fig2.suptitle('Sharp IR values with distance', fontsize=16)
+#%% Error as a function of distance
+fig, ax = plt.subplots()
+plt.scatter(distances,allError)
+ax.set_title('Absolute Error')
+ax.set_xlabel('Distance (cm)')
+fig, ax = plt.subplots()
+plt.scatter(distances,allErrorRel)
+ax.set_title('Relative Error')
+ax.set_xlabel('Distance (cm)')
 
-#%% Omron Correlation Plots
-fig3 = plt.figure(3)
-fig3, axarr = plt.subplots(4, sharex=True)
-for i in range(0,4):
-	axarr[i].scatter(distance,np.mean(omronVert[i], axis = 1))
+stats.binned_statistic(distances,np.abs(allError),statistic='mean')
 
-fig3.suptitle('Omron columns with distance, columwise for %s'%filename, fontsize=16)
+bins = 8
+N = bins	
+results,ind,ind2 = binPlot(distances,np.abs(allError),bins=bins) # Mean error at each binned distance
+boxPlot(results, allError,ind) # Box plot of results
 
-fig4 = plt.figure(4)
-fig4, axarr = plt.subplots(4, sharex=True)
-for i in range(0,4):
-	axarr[i].scatter(distance,np.mean(omronHoriz[i], axis = 1))
+results,ind,ind2 = binPlot(distances,np.abs(allErrorRel),bins=bins) # Mean error at each binned distance
+boxPlot(results, allErrorRel,ind) # Box plot of results
 
-fig4.suptitle('Omron rows with distance, columwise for %s'%filename, fontsize=16)
-
-fig4 = plt.figure(3)
-fig4, axarr = plt.subplots(4, sharex=True)
-for i in range(0,4):
-	axarr[i].scatter(distance,np.mean(omronVert[i], axis = 1) / np.mean(omronVert[0],axis=1))
-
-fig4.suptitle('Omron columns with distance normalized to distal value, columwise for %s'%filename, fontsize=16)
-
-#%% Save to file
-#pathOut = '../Analysis/nov3/swing/'
-#t = distance
-#x = IR[:,2:-1]
-#np.savetxt(pathOut + 't3.csv',t,delimiter=',')
-#np.savetxt(pathOut + 'x3.csv',x,delimiter=',')
-
-#%% Machine Learning analysis
-
-#y_rbf, y_lin, y_poly = svmRegression(x,t)
+#%% Save workspace
+#workspaceSavePath = path + '.out'
+##saveWorkspace(workspaceSavePath) # Shelf method. Can be troublesome
+#
+import dill                            #pip install dill --user
+filename = 'forwardSVR' + '_workspace.pkl'
+dill.dump_session(filename)
+#dill.load_session(filename) # To load 
+#%% Try Dill Pickle
+#restoreWorkspace('unsure.out')
