@@ -15,37 +15,23 @@ Loads multiple files and performs varying levels of Deep learning analysis on ea
 from __future__ import division
 #from analysisFunctions import *
 
-import numpy
 import numpy as np
-#import pandas
-
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
-
 from time import time
-import logging
 import matplotlib.pyplot as plt
-import matplotlib.mlab as mlab
-
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
-from sklearn.datasets import fetch_lfw_people
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from sklearn.decomposition import PCA
-from sklearn.svm import SVC, SVR
+from sklearn.svm import  SVR
 from scipy import stats
 import scipy
 
-scaleCameraTable = 73.298 / 5.0 # Scale for system, pixels/cm. From Nov 3?
-#import time
 import glob, os
 import pickle, shelve
 import matplotlib.pyplot as plt
 
 print(__doc__)
+
+#%% Parameters
+scaleCameraTable = 73.298 / 5.0 # Scale for system, pixels/cm. From Nov 3?
 
 #%% Load Datasets
 
@@ -66,7 +52,7 @@ Ylist = []
 seed = 7 # fix random seed for reproducibility
 
 for file in files:
-    XXtemp = numpy.genfromtxt(file,delimiter=',')
+    XXtemp = np.genfromtxt(file,delimiter=',')
     XX.append(XXtemp)
     Xtemp = XXtemp[:,:-5] # Remove last 5 columns (anchor, tag, distance)
     Ytemp = XXtemp[:,-5:]
@@ -74,7 +60,7 @@ for file in files:
     
     Xlist.append(Xtemp)
     Ylist.append(Ytemp)
-#XX = numpy.genfromtxt('forward/XX1.csv',delimiter=',')
+#XX = np.genfromtxt('forward/XX1.csv',delimiter=',')
 numFeat = Xtemp.shape[1] # Should be 26
 
 
@@ -185,7 +171,7 @@ for X,Y,file in zip(Xlist,Ylist,files):
 	print( X.shape, Y.shape)
 	n_features = X.shape[1]
 	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25, random_state=42)
-	testData.append(y_test[:,-1])
+	testData.append(y_test)
 	
 	clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
 	clf = clf.fit(X_train, y_train[:,-1])
@@ -209,7 +195,8 @@ errorMedian = [np.median(np.abs(i)) for i in error] # Mean error values for all 
 
 
 allError = [i for trial in error for i in trial] # Errors in distance predictions
-distances = [i for trial in testData for i in trial] # Actual distances
+testData = np.vstack(testData)
+distances = testData[:,-1] # Actual distances
 plotHistogram(allError, 'Error in cm') # Histogram of error
 calcStats(np.abs(allError))
 
@@ -236,6 +223,27 @@ boxPlot(results, allError,ind) # Box plot of results
 
 results,ind,ind2 = binPlot(distances,np.abs(allErrorRel),bins=bins) # Mean error at each binned distance
 boxPlot(results, allErrorRel,ind) # Box plot of results
+
+#%% Error as a function of position
+realX = testData[:,2]
+realY = testData[:,3]
+
+from mpl_toolkits.mplot3d import Axes3D
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+
+ax.scatter(realX,realY,distances)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('error, cm')
+ax.view_init(30,200)
+plt.show()
+#for angle in range(0, 360):
+#    ax.view_init(30, angle)
+#    plt.draw()
+#    plt.pause(.001)
+#ax.plot_wireframe(realX,realY,distances)
 
 #%% Save workspace
 #workspaceSavePath = path + '.out'
