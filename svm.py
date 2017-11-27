@@ -40,7 +40,7 @@ from plot_confusion_matrix import plot_confusion_matrix
 #from xmatrix import xmatrix
 
 # File paths for accessing data
-path ='../Data/proto4/' # Input file path
+path ='../Analysis/Investigation Apr 2017/data/' # Input file path
 output_dir = '../Analysis/'
 output_file = 'proto4_analysis.csv' # File where we summarize run results
 output_path = os.path.join(output_dir,output_file)
@@ -57,7 +57,9 @@ global x_train, x_test, nancount
 
 # Run Parameters
 #cvalue = 2e-3 # Pretty sure this isn't even referenced, at least for RBF kernel
-seedrange = 10 # Number of random seeds we will try
+C = 1000
+gamma = 0.0001
+seedrange = 2 # Number of random seeds we will try
 segment = 0.80 # Percentage of data that we train on. Train on 0.8 means test on 0.2.
 plotbool=0 # Flag for plotting on or off
 seed = 1

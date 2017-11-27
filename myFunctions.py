@@ -1,6 +1,14 @@
+"""
+Functions written by Ben Hoffman
+
+"""
+
 from __future__ import print_function
 import decodeBytes27
-
+from scipy import stats
+import scipy
+import matplotlib.pyplot as plt
+import numpy as np
 packetlist = []
 
 def printStats(mode,packets,datalist):
@@ -24,4 +32,3 @@ def printStats(mode,packets,datalist):
     print(packetsDropped)
     
     #print(packetlist)
- 

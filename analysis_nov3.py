@@ -17,7 +17,7 @@ from sklearn.svm import SVR
 
 print(__doc__)
 path = '../data/nov3/'
-filename = 'forward3.csv'
+filename = 'swing1.csv'
 coordPrefix = 'coords_'
 IRFullPath = path + filename
 coordFullPath = path + coordPrefix + filename
@@ -62,33 +62,9 @@ def loadBothFiles(IRFullPath,coordFullPath):
 	print 'time delta max, median, mean are',np.max(timeDelta), np.median(timeDelta), np.mean(timeDelta)
 	return IR, coordClipped
 
-def svmRegression(X,y):
-    # Fit regression model
-    svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-    svr_lin = SVR(kernel='linear', C=1e3)
-    svr_poly = SVR(kernel='poly', C=1e3, degree=2)
-    y_rbf = svr_rbf.fit(X, y).predict(X)
-    y_lin = svr_lin.fit(X, y).predict(X)
-    y_poly = svr_poly.fit(X, y).predict(X)
-    
-    # #############################################################################
-    # Look at the results
-    lw = 2
-    plt.scatter(X, y, color='darkorange', label='data')
-    plt.plot(X, y_rbf, color='navy', lw=lw, label='RBF model')
-    plt.plot(X, y_lin, color='c', lw=lw, label='Linear model')
-    plt.plot(X, y_poly, color='cornflowerblue', lw=lw, label='Polynomial model')
-    plt.xlabel('data')
-    plt.ylabel('target')
-    plt.title('Support Vector Regression')
-    plt.legend()
-    plt.show()
-    return y_rbf, y_lin, y_poly
-    
-
 #%% Main Loop
 	
-IR, coord = loadBothFiles(IRFullPath,coordFullPath) # Load the coord and IR data and combine together
+IR, coord = loadBothFiles(IRFullPath,coordFullPath) # Load the coord and IR data and combine together, truncate as necessary
 distance = coord[:,-1]
 sharp = IR[:,2:6]
 acc = IR[:,6:9]
@@ -96,6 +72,8 @@ gyr = IR[:,9:12]
 omron = IR[:,12:28]
 time = IR[:,-1] # Time values since 1901
 time = time - min(time) # Relative time values in seconds
+
+#%% New Features: Omron Column, Row data
 omronVert = [] # Array of Omron columns, from distal to proximal
 for i in [0,4,8,12]:
 	omronVert.append(omron[:,i:i+4])
