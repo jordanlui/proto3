@@ -6,8 +6,9 @@ Created on Sat Nov 04 10:00:41 2017
 File Loading Nov 3
 Basic data loading of this data, checking timestamps agree between coord file 
 and proto data, and saving to file.
-Some basic plotting is done as well to look for correlations between sensor data
-and movements.
+
+Some basic plotting and correlation analysis as well. Comparing Omron row and column data
+
 Note this is built to load device data from one CSV file and coordinate data from a matching CSV file
 
 """
