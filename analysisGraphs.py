@@ -9,7 +9,8 @@ Makes plots of the Sharp and Omron Data, comparing to real distance values
 """
 
 from __future__ import division
-#from analysisFunctions import *
+# Custom Functions
+from analysisFunctions import OmronFeatures
 
 import numpy as np
 from time import time
@@ -24,6 +25,8 @@ import glob, os
 import pickle, shelve
 import matplotlib.pyplot as plt
 
+
+
 print(__doc__)
 
 #%% Functions
@@ -35,11 +38,12 @@ def data2Frame(X,Y):
 	omron = X[:,10:]
 	realDistances = Y[:,-1] # Real distance cm
 	realDistances = np.reshape(realDistances,(M,1))
+#	omronVert, omronHoriz = OmronFeatures(omron) # Split to colums and rows
 	omronMean = np.mean(omron,axis=1)
 	omronMean = np.reshape(omronMean,(M,1))
 	omronMedian = np.median(omron,axis=1)
 	omronMedian = np.reshape(omronMedian,(M,1))
-	data = np.hstack((ind,sharp,omronMean,omronMedian,realDistances))
+	data = np.hstack((ind,sharp,omronMean,omronMedian,realDistances,omron))
 	df = pd.DataFrame(data,columns=['Index']+labels)
 	return df
 
@@ -58,7 +62,7 @@ def plotRaw(df):
 	return
 
 def plotNorm(df):
-	# Plots Raw Sharp Data and Real distance data (cm)
+	# Plots Raw Sharp Data, Omron, and Real distance data (cm), all normalized
 	fig, ax = plt.subplots()
 	df.Long1.plot(ax=ax,style='g--', legend=True).set_title('Normalized Sharp and Omron Data')
 	df.Short1.plot(ax=ax,style='b--',legend=True)
@@ -81,7 +85,7 @@ dill.load_session(filename)
 #dill.dump_session(filename)
 
 #%% Plot Analysis
-labels= ['Long1','Short1','Long2','Short2','OmronMean','OmronMedian','RealDist']
+labels= ['Long1','Short1','Long2','Short2','OmronMean','OmronMedian','RealDist','o1','o2','o3','o4','o5','o6','o7','o8','o9','o10','o11','o12','o13','o14','o15','016']
 fileChoice = 0 # This should be forward1 - which I plotted once
 
 
@@ -90,7 +94,11 @@ for i in range(len(Xlist)):
 	X = Xlist[fileChoice]
 	Y = Ylist[fileChoice]
 	df = data2Frame(X,Y)
+	checkLabelNames = list(df)
 	df_norm = (df-df.mean()) / (df.max() - df.min())
-#	plotRaw(df_norm)
-	plotNorm(df_norm)
+	print('analysis on file: %s'%files[i])
+#	plotRaw(df)
+	df.plot.scatter(x='RealDist',y='OmronMedian')
+	df.plot.scatter(x='RealDist',y='OmronMean')
+#	plotNorm(df_norm)
 
