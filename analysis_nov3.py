@@ -160,7 +160,7 @@ def boxPlot(results,y,ind):
 #%% Main Loop
 #numFeat = 26
 startTime = time()
-rSquares = [] # R2 values
+scores = [] # System mean accuracy on prediction, cm
 error = [] # Error values
 errorRel = []
 testData = []
@@ -184,8 +184,8 @@ for X,Y,file in zip(Xlist,Ylist,files):
 	errorRel.append(np.abs(y_error)/y_test[:,-1]) # Relative error values
 	errorMean = np.mean(np.abs(y_error)) # Mean absolute error, cm
 	print("done in %0.3fs" % (time() - t0))
-	rSquared = clf.score(X_test,y_test[:,-1]) # R2 value
-	rSquares.append(rSquared)
+	score = clf.score(X_test,y_test[:,-1]) # system score, mean accuracy in cm
+	scores.append(score)
 	  
 print('Overall runtime was %.2f'%(time() - startTime))
 
@@ -227,30 +227,44 @@ boxPlot(results, allErrorRel,ind) # Box plot of results
 #%% Error as a function of position
 realX = testData[:,2]
 realY = testData[:,3]
+z = allErrorRel
 
+# 3D Scatter plot method
 from mpl_toolkits.mplot3d import Axes3D
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-
-
-ax.scatter(realX,realY,distances)
+ax.scatter(realX,realY,z)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('error, cm')
 ax.view_init(30,200)
 plt.show()
+# Try rotations
 #for angle in range(0, 360):
 #    ax.view_init(30, angle)
 #    plt.draw()
 #    plt.pause(.001)
 #ax.plot_wireframe(realX,realY,distances)
 
+# 2D Heatmap method - doesn't give much useful data
+#https://stackoverflow.com/questions/2369492/generate-a-heatmap-in-matplotlib-using-a-scatter-data-set
+#heatmap, xedges,yedges = np.histogram2d(realX,realY,bins=50)
+#extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+#plt.clf()
+#plt.imshow(heatmap.T,extent=extent,origin='lower')
+#plt.show()
+
+#%% Surf plot
+# Could work - but point intperolation likely needed
+#https://matplotlib.org/examples/mplot3d/surface3d_demo.html
+
+
 #%% Save workspace
 #workspaceSavePath = path + '.out'
 ##saveWorkspace(workspaceSavePath) # Shelf method. Can be troublesome
 #
-import dill                            #pip install dill --user
-filename = 'forwardSVR' + '_workspace.pkl'
+import dill                           
+filename = 'allfilesSVR' + '_workspace.pkl'
 dill.dump_session(filename)
 #dill.load_session(filename) # To load 
 #%% Try Dill Pickle
