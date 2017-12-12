@@ -33,7 +33,7 @@ print(__doc__)
 
 #%% Parameters
 scaleCameraTable = 73.17 / 5.0 # Scale for system, pixels/cm. From Nov 3 2017
-
+distanceColumn = -3 # Position of the distance column
 #%% Load Datasets
 
 files = []
@@ -54,14 +54,14 @@ seed = 7 # fix random seed for reproducibility
 labelColumns = 7 # Number of labeling columns on the right end of the matrix
 
 for file in files:
-    XXtemp = np.genfromtxt(file,delimiter=',')
-    XX.append(XXtemp)
-    Xtemp = XXtemp[:,:-labelColumns] # Remove last 5 columns (anchor, tag, distance)
-    Ytemp = XXtemp[:,-labelColumns:]
-    Ytemp = Ytemp/ scaleCameraTable # Change distances from pixels to cm
-    
-    Xlist.append(Xtemp)
-    Ylist.append(Ytemp)
+	XXtemp = np.genfromtxt(file,delimiter=',')
+	XX.append(XXtemp)
+	Xtemp = XXtemp[:,:-labelColumns] # Device data only (Sharp, Acc, Gyro, Omron)
+	Ytemp = XXtemp[:,-labelColumns:] # Grab label columns (coords, distance, time, packet)
+	Ytemp[:,4] = Ytemp[:,4] / scaleCameraTable # Change distances from pixels to cm
+	
+	Xlist.append(Xtemp)
+	Ylist.append(Ytemp)
 #XX = np.genfromtxt('forward/XX1.csv',delimiter=',')
 numFeat = Xtemp.shape[1] # Should be 26
 
@@ -74,20 +74,20 @@ def saveWorkspace(workspaceSavePath):
 	my_shelf = shelve.open(workspaceSavePath,'n') # 'n' for new
 
 	for key in dir():
-	    try:
-	        my_shelf[key] = globals()[key]
-	    except TypeError:
-	        #
-	        # __builtins__, my_shelf, and imported modules can not be shelved.
-	        #
-	        print('ERROR shelving: {0}'.format(key))
+		try:
+			my_shelf[key] = globals()[key]
+		except TypeError:
+			#
+			# __builtins__, my_shelf, and imported modules can not be shelved.
+			#
+			print('ERROR shelving: {0}'.format(key))
 	my_shelf.close()
 	return
 
 def restoreWorkspace(path):
 	my_shelf = shelve.open(path)
 	for key in my_shelf:
-	    globals()[key]=my_shelf[key]
+		globals()[key]=my_shelf[key]
 	my_shelf.close()
 	
 	
@@ -95,7 +95,7 @@ def SVR_Optimize(X_train,y_train):
 	print("Optimize system for best C, gamma values")
 	t0 = time()
 	param_grid = {'C': [1e3, 5e3, 1e4, 5e4, 1e5],
-	              'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
+				  'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
 	clf = GridSearchCV(SVR(kernel='rbf', gamma=0.1), param_grid)
 	clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
 	clf = clf.fit(X_train, y_train)
@@ -166,10 +166,10 @@ scores = [] # System mean accuracy on prediction, cm
 error = [] # Error values
 errorRel = []
 testData = []
-distanceColumn = -3 # Position of the distance column
+
 
 for X,Y,file in zip(Xlist,Ylist,files):
-#    numFeat = x.shape[1]
+#	numFeat = x.shape[1]
 	print('Analysis on %s'%file)
 	print( X.shape, Y.shape)
 	n_features = X.shape[1]
@@ -244,9 +244,9 @@ ax.view_init(30,200)
 plt.show()
 # Try rotations
 #for angle in range(0, 360):
-#    ax.view_init(30, angle)
-#    plt.draw()
-#    plt.pause(.001)
+#	ax.view_init(30, angle)
+#	plt.draw()
+#	plt.pause(.001)
 #ax.plot_wireframe(realX,realY,distances)
 
 # 2D Heatmap method - doesn't give much useful data
@@ -266,7 +266,7 @@ plt.show()
 #workspaceSavePath = path + '.out'
 ##saveWorkspace(workspaceSavePath) # Shelf method. Can be troublesome
 #
-import dill                           
+import dill						   
 filename = 'allfilesSVR' + '_workspace.pkl'
 dill.dump_session(filename)
 #dill.load_session(filename) # To load 

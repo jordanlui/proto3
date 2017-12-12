@@ -22,22 +22,35 @@ end
 [filepath,name,ext] = fileparts(dataPath);
 plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,stationaryThreshold);
 
-dataTemp = csvread(dataPath,1,0); % Skip the header
-time = dataTemp(:,1);
-packets = dataTemp(:,2);
-acc = dataTemp(:,3:5); % Accelerometer data, m/s2 values
-gyr = dataTemp(:,6:8); % Gyro data, degrees per second
-accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
+% File parsing for Oct 27
+% dataTemp = csvread(dataPath,1,0); % Skip the header
+% time = dataTemp(:,1);
+% packets = dataTemp(:,2);
+% acc = dataTemp(:,3:5); % Accelerometer data, m/s2 values
+% gyr = dataTemp(:,6:8); % Gyro data, degrees per second
+% accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
+% File parsing for Oct 27
 
+% File parsing for Nov 3 data
+dataTemp = csvread(dataPath,0,0); % No Header to skip for nov3
+time = dataTemp(:,33); % Time in ms
+packets = dataTemp(:,32); % packets
+acc = dataTemp(:,5:7);
+gyr = dataTemp(:,8:10);
+accgyr_orig = [acc gyr];
+% File parsing for Nov 3 data
+
+% Calculate microcontroller frequency from the timesteps in data
 mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calculate frequency from the data
 mcuFreq = floor(mcuFreq); % Integer frequency value
+timeSteps = time(2:end) - time(1:end-1);
+timeStep = mode(timeSteps); % Most common time step represents ideal timing period
+mcuFreq = 1000/timeStep; % Controller Frequency in Hz 
+samplePeriod = (1 / (mcuFreq)); % Period is 1/frequency
 
-% Calibration values from October 16. 
+% Calibrate acceleomter and gyro values based on calibration file
 gForce_bound = 1.0; % Upper and lower bound value that we will normalize to
 load(calibrationFile);
-% gyrCal = [6.787350142	-1.984579545	-21.95253208];
-% AccMax = [10.118649	10.043275	11.127223];
-% AccMin = [-10.816157	-10.214361	-10.224532];
 
 % Calibration related compensation
 % Mean shift gyro values
@@ -105,8 +118,6 @@ gyrX = gyr(:,1);
 gyrY = gyr(:,2);
 gyrZ = gyr(:,3);
 
-
-samplePeriod = (1 / (mcuFreq)); % Period is 1/frequency
 
 % -------------------------------------------------------------------------
 %% Manually frame data
