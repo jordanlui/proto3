@@ -36,7 +36,7 @@ def data2Frame(X,Y):
 	ind = np.reshape(ind,(M,1))
 	sharp = X[:,0:4] # Sharp sensor data, not converted to cm
 	omron = X[:,10:]
-	realDistances = Y[:,-1] # Real distance cm
+	realDistances = Y[:,distanceColumn] # Real distance cm
 	realDistances = np.reshape(realDistances,(M,1))
 #	omronVert, omronHoriz = OmronFeatures(omron) # Split to colums and rows
 	omronMean = np.mean(omron,axis=1)
@@ -80,14 +80,14 @@ def plotNorm(df):
 
 #%% Export or load data
 import dill                           
-filename = 'allfiles' + '_workspace.pkl'
+filename = 'allfilesSVR' + '_workspace.pkl'
 dill.load_session(filename)
 #dill.dump_session(filename)
 
 #%% Plot Analysis
 labels= ['Long1','Short1','Long2','Short2','OmronMean','OmronMedian','RealDist','o1','o2','o3','o4','o5','o6','o7','o8','o9','o10','o11','o12','o13','o14','o15','016']
 fileChoice = 0 # This should be forward1 - which I plotted once
-
+distanceColumn = -3 # Position of the distance column
 
 for i in range(len(Xlist)):
 	fileChoice = i

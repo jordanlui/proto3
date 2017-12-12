@@ -6,6 +6,7 @@ Created on Mon Nov 06 23:17:45 2017
 
 Machine Learning Analysis on nov 3 IR data
 
+
 Code base from:
 https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
 Loads multiple files and performs varying levels of Deep learning analysis on each file, printing out results for each
@@ -31,7 +32,7 @@ import matplotlib.pyplot as plt
 print(__doc__)
 
 #%% Parameters
-scaleCameraTable = 73.298 / 5.0 # Scale for system, pixels/cm. From Nov 3?
+scaleCameraTable = 73.17 / 5.0 # Scale for system, pixels/cm. From Nov 3 2017
 
 #%% Load Datasets
 
@@ -50,12 +51,13 @@ Xlist = []
 Ylist = []
 
 seed = 7 # fix random seed for reproducibility
+labelColumns = 7 # Number of labeling columns on the right end of the matrix
 
 for file in files:
     XXtemp = np.genfromtxt(file,delimiter=',')
     XX.append(XXtemp)
-    Xtemp = XXtemp[:,:-5] # Remove last 5 columns (anchor, tag, distance)
-    Ytemp = XXtemp[:,-5:]
+    Xtemp = XXtemp[:,:-labelColumns] # Remove last 5 columns (anchor, tag, distance)
+    Ytemp = XXtemp[:,-labelColumns:]
     Ytemp = Ytemp/ scaleCameraTable # Change distances from pixels to cm
     
     Xlist.append(Xtemp)
@@ -164,6 +166,7 @@ scores = [] # System mean accuracy on prediction, cm
 error = [] # Error values
 errorRel = []
 testData = []
+distanceColumn = -3 # Position of the distance column
 
 for X,Y,file in zip(Xlist,Ylist,files):
 #    numFeat = x.shape[1]
@@ -174,17 +177,17 @@ for X,Y,file in zip(Xlist,Ylist,files):
 	testData.append(y_test)
 	
 	clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
-	clf = clf.fit(X_train, y_train[:,-1])
+	clf = clf.fit(X_train, y_train[:,distanceColumn])
 	
 	print("Predicting on the test set, SVR")
 	t0 = time()
 	y_pred = clf.predict(X_test)
-	y_error = y_test[:,-1] - y_pred # Error in prediction, cm
+	y_error = y_test[:,distanceColumn] - y_pred # Error in prediction, cm
 	error.append(y_error) # Save error values for each trial
-	errorRel.append(np.abs(y_error)/y_test[:,-1]) # Relative error values
+	errorRel.append(np.abs(y_error)/y_test[:,distanceColumn]) # Relative error values
 	errorMean = np.mean(np.abs(y_error)) # Mean absolute error, cm
 	print("done in %0.3fs" % (time() - t0))
-	score = clf.score(X_test,y_test[:,-1]) # system score, mean accuracy in cm
+	score = clf.score(X_test,y_test[:,distanceColumn]) # system score, mean accuracy in cm
 	scores.append(score)
 	  
 print('Overall runtime was %.2f'%(time() - startTime))
@@ -196,7 +199,7 @@ errorMedian = [np.median(np.abs(i)) for i in error] # Mean error values for all 
 
 allError = [i for trial in error for i in trial] # Errors in distance predictions
 testData = np.vstack(testData)
-distances = testData[:,-1] # Actual distances
+distances = testData[:,distanceColumn] # Actual distances
 plotHistogram(allError, 'Error in cm') # Histogram of error
 calcStats(np.abs(allError))
 

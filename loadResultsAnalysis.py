@@ -3,7 +3,8 @@
 Created on Sat Nov 04 10:00:41 2017
 
 @author: Jordan
-File Loading Nov 3
+Load files, check integrity, basic plots, and save to new files.
+
 Basic data loading of this data, checking timestamps agree between coord file 
 and proto data, and saving to file.
 
@@ -167,14 +168,17 @@ def OmronFeatures(omron):
 	return omronVert, omronHoriz
 
 def savetoFile(t,IR,folderOut):
+	# Load the intact data and save select portions to output files
+	packetAndTime = IR[:,0:2] # Grab the packet number and Arduino Time
+	
 	pathOut = '../Analysis/nov3/' + folderOut + '/'
 	if len(t.shape)==1:
-		t = np.reshape(t,(len(t),1))
-	x = IR[:,2:-1]
+		t = np.reshape(t,(len(t),1)) # Resize t if it is a vector, although this shouldn't occur
+	x = IR[:,2:-1] # Grab the Device data only, excluding time stamps
 	
-	np.savetxt(pathOut + 't' + str(num) + '.csv',t,delimiter=',')
-	np.savetxt(pathOut + 'x' + str(num) + '.csv',x,delimiter=',')
-	np.savetxt(pathOut + 'XX' + str(num) + '.csv',np.hstack((x,t)),delimiter=',')
+	np.savetxt(pathOut + 't' + str(num) + '.csv',t,delimiter=',') # t matrix is the position label data only
+	np.savetxt(pathOut + 'x' + str(num) + '.csv',x,delimiter=',') # x matrix is are the 26 data columns only
+	np.savetxt(pathOut + 'XX' + str(num) + '.csv',np.hstack((x,t,packetAndTime)),delimiter=',')
 #%% Main Loop
 
 def main():
@@ -187,7 +191,7 @@ def main():
 	acc = IR[:,6:9]
 	gyr = IR[:,9:12]
 	omron = IR[:,12:28]
-	time = IR[:,-1] # Time values since 1901
+	time = IR[:,-1] # Time values since 1901 in seconds
 	time = time - min(time) # Relative time values in seconds
 
 	coord = fixAnchorPosition(coord) # Fixing Coordinate jumping
@@ -199,7 +203,7 @@ def main():
 	plotSharpCorrelation(distance,sharp) # Sharp IR Correlation Plots
 	plotOmronCorrelation(distance,omronVert,omronHoriz) # Omron Correlation Plots
 	
-#	savetoFile(positionDistance,IR,folderOut) # Save to file
+	savetoFile(positionDistance,IR,folderOut) # Save to file
 	return coord, IR, omron, omronVert, omronHoriz
 #%% Main Loop
 
