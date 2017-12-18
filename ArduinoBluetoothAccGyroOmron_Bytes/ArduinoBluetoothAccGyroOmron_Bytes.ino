@@ -69,8 +69,6 @@ SoftwareSerial bluetooth(bluetoothTx, bluetoothRx);
 Adafruit_LSM9DS0 lsm = Adafruit_LSM9DS0();
 Adafruit_Simple_AHRS ahrs(&lsm.getAccel(), &lsm.getMag());
 void setupSensor() // Actually have to run the setupSensor() script to initiate at desired ranges
-
-
 {
   // 1.) Initialize each component
 //  lsm.setupAccel(lsm.LSM9DS0_ACCELRANGE_2G);
@@ -131,7 +129,7 @@ void setup()
   while (!Serial);     // will pause Zero, Leonardo, etc until serial console opens
 #endif
 
-//  void setupSensor()
+  void setupSensor() // Configure the Adafruit LSM IMU Config settings, including acc G range, gyro dps
   
   delay(10);
   Serial.begin(115200);

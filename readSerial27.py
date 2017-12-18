@@ -20,8 +20,8 @@ mcuPeriod = 1 / mcuFreq # Python loop timing, in seconds
 # Run parameters
 testLength = 30 #loop will run for testLength seconds
 
-pathout = '../Data/oct30/'
-filename = 'labwalk.csv'
+pathout = '../Data/dec18/'
+filename = 'test1.csv'
 #filename = 'timertest.csv'
 fullpathOut = pathout + filename
 
