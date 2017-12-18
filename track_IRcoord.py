@@ -3,7 +3,10 @@
 Created on Fri Nov 03 15:15:09 2017
 
 @author: Jordan
+Nov 10: 
 Track position on webcam and read from prototype device, outputting to a single file
+Note that the results are currently saved to different files. 
+The coordinates file is often longer because the script continues after COM port to device is closed
 """
 
 # USAGE

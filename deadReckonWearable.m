@@ -3,7 +3,7 @@
 % More general: Contains HPF and LPF to filter both sides
 % https://github.com/xioTechnologies/Gait-Tracking-With-x-IMU/tree/master/Gait%20Tracking%20With%20x-IMU
 
-function [pos, displacement, maxDisplacement3Axis,accgyr_orig,acc,gyr,vel,mcuFreq] = deadReckonGeneral(dataPath,filtLPF,filtHPF,stationaryThreshold, calibrationFile)
+function [pos, displacement, maxDisplacement3Axis,accgyr_orig,acc,gyr,vel,mcuFreq] = deadReckonWearable(dataPath,filtLPF,filtHPF,stationaryThreshold, calibrationFile)
 
 addpath('Libraries/ximu_matlab_library');	% include x-IMU MATLAB library
 addpath('Libraries/quaternion_library');
@@ -31,21 +31,21 @@ plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,
 % accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
 % File parsing for Oct 27
 
-% File parsing for Dec 16 data
-dataTemp = csvread(dataPath,2,0); % No Header to skip for nov3
-time = dataTemp(:,1); % Time in seconds
-% packets = dataTemp(:,32); % packets
-acc = dataTemp(:,2:4); % Acceleration, g
-gyr = dataTemp(:,8:10); % Gyro, dps
+% File parsing for Nov 3 data
+dataTemp = csvread(dataPath,0,0); % No Header to skip for nov3
+time = dataTemp(:,33); % Time in ms
+packets = dataTemp(:,32); % packets
+acc = dataTemp(:,5:7);
+gyr = dataTemp(:,8:10);
 accgyr_orig = [acc gyr];
-% File parsing for Dec 16 data
+% File parsing for Nov 3 data
 
 % Calculate microcontroller frequency from the timesteps in data
-% mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calculate frequency from the data
-% mcuFreq = floor(mcuFreq); % Integer frequency value
+mcuFreq = (packets(end) - packets(1) + 1 ) / (time(end) - time(1)) * 1e3; % Calculate frequency from the data
+mcuFreq = floor(mcuFreq); % Integer frequency value
 timeSteps = time(2:end) - time(1:end-1);
-timeStep = (mode(timeSteps)); % Most common time step represents ideal timing period
-mcuFreq = 1/timeStep; % Controller Frequency in Hz 
+timeStep = mode(timeSteps); % Most common time step represents ideal timing period
+mcuFreq = 1000/timeStep; % Controller Frequency in Hz 
 samplePeriod = (1 / (mcuFreq)); % Period is 1/frequency
 
 % Calibrate acceleomter and gyro values based on calibration file
@@ -60,11 +60,11 @@ end
 
 % Normalize accelerometer values
 % This will accept accelerometer values in m/s2 and normalize to +/- 9.81
-% for i = 1:3
-%     col = acc(:,i);
-%     col = 2 * gForce_bound * (col - AccMin(i)) / (AccMax(i) - AccMin(i)) - gForce_bound;
-%     acc(:,i) = col;
-% end
+for i = 1:3
+    col = acc(:,i);
+    col = 2 * gForce_bound * (col - AccMin(i)) / (AccMax(i) - AccMin(i)) - gForce_bound;
+    acc(:,i) = col;
+end
 
 %% Before and after analysis of acc and gyro data
 

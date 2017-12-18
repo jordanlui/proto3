@@ -15,6 +15,8 @@
   Update Summary:
   Sept 2017:   Updating to output accelerometer data, and ignore the distal Omron sensors
   Oct 2017: Byte transmission instead of serial.print char
+  Dec 17 2017: Increased Accelerometer and Gyro sensitivity to 8G and 1200DPS. Check Sensor API for units and background.
+  https://github.com/adafruit/Adafruit_LSM9DS0_Library/blob/master/examples/sensorapi/sensorapi.ino
 
 
 */
@@ -71,9 +73,11 @@ void setupSensor() // Actually have to run the setupSensor() script to initiate 
 
 {
   // 1.) Initialize each component
-  lsm.setupAccel(lsm.LSM9DS0_ACCELRANGE_2G);
+//  lsm.setupAccel(lsm.LSM9DS0_ACCELRANGE_2G);
+  lsm.setupAccel(lsm.LSM9DS0_ACCELRANGE_8G);
   lsm.setupMag(lsm.LSM9DS0_MAGGAIN_2GAUSS);
-  lsm.setupGyro(lsm.LSM9DS0_GYROSCALE_245DPS);
+//  lsm.setupGyro(lsm.LSM9DS0_GYROSCALE_245DPS);
+  lsm.setupGyro(lsm.LSM9DS0_GYROSCALE_2000DPS);
 
 }
 // End of IMU Setup
@@ -276,7 +280,7 @@ void acquireData() {
   sensors_event_t accel, mag, gyro, temp;
   lsm.getEvent(&accel, &mag, &gyro, &temp);
 
-  AcX = accel.acceleration.x; // Value in g (Full gravity of 9.81 m/s2 returns a value of 1.0g
+  AcX = accel.acceleration.x; // Value in m/s2 
   AcY = accel.acceleration.y;
   AcZ = accel.acceleration.z;
 
