@@ -18,10 +18,10 @@ mcuPeriod = 1 / mcuFreq # Python loop timing, in seconds
 #numBytes = 33 * 4 + 8
 
 # Run parameters
-testLength = 30 #loop will run for testLength seconds
+testLength = 15 #loop will run for testLength seconds
 
 pathout = '../Data/dec18/'
-filename = 'test1.csv'
+filename = 'upswingfast.csv'
 #filename = 'timertest.csv'
 fullpathOut = pathout + filename
 

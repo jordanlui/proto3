@@ -68,6 +68,7 @@ SoftwareSerial bluetooth(bluetoothTx, bluetoothRx);
 
 Adafruit_LSM9DS0 lsm = Adafruit_LSM9DS0();
 Adafruit_Simple_AHRS ahrs(&lsm.getAccel(), &lsm.getMag());
+
 void setupSensor() // Actually have to run the setupSensor() script to initiate at desired ranges
 {
   // 1.) Initialize each component
@@ -78,6 +79,57 @@ void setupSensor() // Actually have to run the setupSensor() script to initiate 
   lsm.setupGyro(lsm.LSM9DS0_GYROSCALE_2000DPS);
 
 }
+
+void displaySensorDetails(void)
+{
+  sensor_t accel, mag, gyro, temp;
+  
+  lsm.getSensor(&accel, &mag, &gyro, &temp);
+  
+  Serial.println(F("------------------------------------"));
+  Serial.print  (F("Sensor:       ")); Serial.println(accel.name);
+  Serial.print  (F("Driver Ver:   ")); Serial.println(accel.version);
+  Serial.print  (F("Unique ID:    ")); Serial.println(accel.sensor_id);
+  Serial.print  (F("Max Value:    ")); Serial.print(accel.max_value); Serial.println(F(" m/s^2"));
+  Serial.print  (F("Min Value:    ")); Serial.print(accel.min_value); Serial.println(F(" m/s^2"));
+  Serial.print  (F("Resolution:   ")); Serial.print(accel.resolution); Serial.println(F(" m/s^2"));  
+  Serial.println(F("------------------------------------"));
+  Serial.println(F(""));
+
+  Serial.println(F("------------------------------------"));
+  Serial.print  (F("Sensor:       ")); Serial.println(mag.name);
+  Serial.print  (F("Driver Ver:   ")); Serial.println(mag.version);
+  Serial.print  (F("Unique ID:    ")); Serial.println(mag.sensor_id);
+  Serial.print  (F("Max Value:    ")); Serial.print(mag.max_value); Serial.println(F(" uT"));
+  Serial.print  (F("Min Value:    ")); Serial.print(mag.min_value); Serial.println(F(" uT"));
+  Serial.print  (F("Resolution:   ")); Serial.print(mag.resolution); Serial.println(F(" uT"));  
+  Serial.println(F("------------------------------------"));
+  Serial.println(F(""));
+
+  Serial.println(F("------------------------------------"));
+  Serial.print  (F("Sensor:       ")); Serial.println(gyro.name);
+  Serial.print  (F("Driver Ver:   ")); Serial.println(gyro.version);
+  Serial.print  (F("Unique ID:    ")); Serial.println(gyro.sensor_id);
+  Serial.print  (F("Max Value:    ")); Serial.print(gyro.max_value); Serial.println(F(" rad/s"));
+  Serial.print  (F("Min Value:    ")); Serial.print(gyro.min_value); Serial.println(F(" rad/s"));
+  Serial.print  (F("Resolution:   ")); Serial.print(gyro.resolution); Serial.println(F(" rad/s"));  
+  Serial.println(F("------------------------------------"));
+  Serial.println(F(""));
+
+  Serial.println(F("------------------------------------"));
+  Serial.print  (F("Sensor:       ")); Serial.println(temp.name);
+  Serial.print  (F("Driver Ver:   ")); Serial.println(temp.version);
+  Serial.print  (F("Unique ID:    ")); Serial.println(temp.sensor_id);
+  Serial.print  (F("Max Value:    ")); Serial.print(temp.max_value); Serial.println(F(" C"));
+  Serial.print  (F("Min Value:    ")); Serial.print(temp.min_value); Serial.println(F(" C"));
+  Serial.print  (F("Resolution:   ")); Serial.print(temp.resolution); Serial.println(F(" C"));  
+  Serial.println(F("------------------------------------"));
+  Serial.println(F(""));
+  
+  delay(500);
+}
+
+
 // End of IMU Setup
 
 
@@ -129,8 +181,7 @@ void setup()
   while (!Serial);     // will pause Zero, Leonardo, etc until serial console opens
 #endif
 
-  void setupSensor() // Configure the Adafruit LSM IMU Config settings, including acc G range, gyro dps
-  
+
   delay(10);
   Serial.begin(115200);
   //Bluetooth Setup
@@ -155,6 +206,11 @@ void setup()
     Serial.println("R.I.P.");
   }
   Serial.println("LSM9DS0 9DOF IMU Detected.");
+  
+  // IMU setup and config
+  displaySensorDetails();
+  setupSensor(); // Configure the Adafruit LSM IMU Config settings, including acc G range, gyro dps
+  
   Serial.println("");
 
   for (int i = 0; i < 3; i++)

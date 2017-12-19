@@ -28,8 +28,10 @@ plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,
 % packets = dataTemp(:,2);
 % acc = dataTemp(:,3:5); % Accelerometer data, m/s2 values
 % gyr = dataTemp(:,6:8); % Gyro data, degrees per second
-% accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
+
 % File parsing for Oct 27
+
+accgyr_orig = [acc gyr]; % Original acc and gyro data, before calibration
 
 % File parsing for Nov 3 data
 dataTemp = csvread(dataPath,0,0); % No Header to skip for nov3
