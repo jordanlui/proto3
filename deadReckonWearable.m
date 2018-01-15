@@ -19,7 +19,7 @@ if nargin < 5
     calibrationFile = 'calibration_flora_oct5.mat';
 end
 
-[filepath,name,ext] = fileparts(dataPath);
+[path,name,ext] = fileparts(dataPath);
 plotInfo = sprintf(' for "%s", filt with %.2f, %.4f, %.4f',name,filtLPF,filtHPF,stationaryThreshold);
 
 % File parsing for Oct 27
