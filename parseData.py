@@ -4,7 +4,8 @@ Created on Tue Dec 19 21:29:25 2017
 
 @author: Jordan
 
-Parse Data from ART System, save to file
+Parse Data from ART System .drf files, save to file
+Input is a regular ART .drf file, output is a csv file.
 """
 
 import re
@@ -12,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob, os
 
-#%%
+#%% Regular expression queries for validating intact ART data
 #filePath = '../data/body.drf'
 filePath = '../data/elbowFlex1.drf'
 fileName = re.findall('.*/(.+).drf',filePath)[0]
@@ -26,15 +27,6 @@ regexNumObjects = '6di ([0-9]) ' # Number of objects tracked
 queryDevice = '(?:(-?[0-9]+) ?)' # Query for integer Omron / IMU Device data
 query6d = '((\[(?:(?:-??[0-9]+\.??[0-9]*) ??){2}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){6}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){9}\]) ??)' # Grabs
 query6di = '((\[(?:(?:-??[0-9]+\.??[0-9]*) ??){3}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){3}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){9}\]) ??)' # 6di data
-
-
-# Data Arrays
-#dataLabel = []
-#frame = []
-#time = []
-#sixdcal = []
-#NumObjects = -1
-#positions = []
 
 #%% Functions
 def BodyPosition(query,string):
@@ -103,42 +95,11 @@ def parse(filePath): # Parse files
 					deviceDatas.append([0 for i in range(26)]) # Put an empty line in otherwise
 	return frame,time,sixdcal, positions, rotations, deviceDatas
 
-def savePosition(positions,time):
-	lengths = []
-	for body in positions:
-		lengths.append(len(body))
-	if lengths[1:] == lengths[:-1]:
-		print 'All arrays are equal length'
-		lengthsEqual = True
-	else:
-		print 'Arrays are not equal in length'
-		minLength = min(lengths)
-		newPositions = []
-		for body in positions:
-			newPositions.append(body[:minLength])
-		positions = newPositions
-		lengthsEqual = True
-	
-	if lengthsEqual:
-		for i,body in enumerate(positions):
-			if i == 0:
-				positionArray = np.array(positions[0])
-			else:
-				positionArray = np.hstack((positionArray,body))
-				
-	if len(time) > len(positionArray):
-		time=time[0:len(positionArray)]
-#	elif len(time) < len(positionArray):
-#		time = time +
-	time = np.reshape(time,(len(time),1))
-	positionArray = np.hstack((time,positionArray)) # Add in time data
-	np.savetxt(fileName+'.csv',positionArray, delimiter=',')
-	return positionArray
-
-def savePositionJan12(positions,rotations,deviceDatas,time):
+def savePositionJan(positions,rotations,deviceDatas,time):
 	data = []
 	data.append(time)
-	data.append(deviceDatas)
+	if deviceDatas:
+		data.append(deviceDatas)
 	[data.append(i) for i in positions]
 	[data.append(i) for i in rotations]
 	lengths = []
@@ -166,8 +127,10 @@ def savePositionJan12(positions,rotations,deviceDatas,time):
 	return dataArray
 
 #%%
-path = '../../ART IR Tracker Setup/data/jan12/'
-files = glob.glob(path+'log*.txt')
+path = '../../ART IR Tracker Setup/data/jan11/'
+#files = glob.glob(path+'log*.txt')
+#path = '../data/jan11/'
+files = glob.glob(path+'*.drf')
 
 
 for file in files:
@@ -175,32 +138,7 @@ for file in files:
 	fileName = os.path.basename(file)[:-4]
 	frame,time,numBodies, positions, rotations, deviceDatas = parse(filePath)
 	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
-	dataArray = savePositionJan12(positions,rotations,deviceDatas,time)
+	dataArray = savePositionJan(positions,rotations,deviceDatas,time)
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
 
 
-		
-#%% Analysis on file
-
-timePeriod = (np.array(time)[1:]-np.array(time)[:-1])	
-freqAvg = 1/np.mean(timePeriod)
-#plt.hist(timePeriod)
-#plt.title('Period Histogram)
-plt.hist(freqAvg)
-plt.title('Frequency Histogram')
-
-#%% Format as array
-#lengths = []
-#for body in positions:
-#	lengths.append(len(body))
-#if lengths[1:] == lengths[:-1]:
-#	print 'All arrays are equal length'
-#	lengthsEqual = True
-#
-#if lengthsEqual:
-#	for i,body in enumerate(positions):
-#		if i == 0:
-#			positionArray = np.array(positions[0])
-#		else:
-#			positionArray = np.hstack((positionArray,body))
-#np.savetxt(fileName+'.csv',positionArray)
