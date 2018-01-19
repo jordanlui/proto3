@@ -18,7 +18,7 @@ import glob, os
 filePath = '../data/elbowFlex1.drf'
 fileName = re.findall('.*/(.+).drf',filePath)[0]
 dataLabelSearch = '([a-zA-Z0-9]+) .+' # RegEx Search string for the alphanum labels
-dataLabels=['fr','ts','6dcal','6d','6di','6df2'] # Search string for alphanum labels
+dataLabels=['fr','ts','6dcal','6d','6di','6df2','glcal','gl'] # Search string for alphanum labels
 regexFloat = '[a-z0-9]+ ([0-9.]+)' # Regex for the float values
 regexFloatInt = '-*[0-9]+\.*[0-9]*' # Float or int values, postive or negative
 regexFloatInt2 = '-?[0-9]+\.?[0-9]*' # Float or int values, postive or negative
@@ -27,6 +27,8 @@ regexNumObjects = '6di ([0-9]) ' # Number of objects tracked
 queryDevice = '(?:(-?[0-9]+) ?)' # Query for integer Omron / IMU Device data
 query6d = '((\[(?:(?:-??[0-9]+\.??[0-9]*) ??){2}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){6}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){9}\]) ??)' # Grabs
 query6di = '((\[(?:(?:-??[0-9]+\.??[0-9]*) ??){3}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){3}\])(\[(?:(?:-??[0-9]+\.??[0-9]*) ??){9}\]) ??)' # 6di data
+queryLineData = '\[.*\]' # All data in a line, starting and ending with []
+handTrackerPointCt = 70 # Number of elements expected for hand tracker data
 
 #%% Functions
 def BodyPosition(query,string):
@@ -42,6 +44,9 @@ def BodyRotation(query,string):
     BodyValues = [float(i) for i in BodyValues] # Convert to float
     position = BodyValues[6:] # Grab position values
     return position
+#
+#def HandData(query,string):
+#	# Search for hand data nad return list of float values
 				
 def parse(filePath): # Parse files
 	file = open(filePath,'r') # Open file
@@ -53,6 +58,7 @@ def parse(filePath): # Parse files
 	NumObjects = -1
 	positions = []
 	rotations = []
+	handTracker = []
 	deviceDatas = [] # Data from Omron / IMU Device
 	for line in file: # Process one line at a time
 		
@@ -83,6 +89,14 @@ def parse(filePath): # Parse files
 					positions[i].append(position) # Append to appropriate list	
 					rotation = BodyRotation(regexFloatInt,body) # Grab rotation data
 					rotations[i].append(rotation) # Append to appropriate list	
+			elif dataType == dataLabels[7] : # finger track 'gl' data
+				if int(re.findall('gl ([0-9]).*',line)[0]) !=0: # Ensure that the line isn't actually empty
+					lineData = re.findall(queryLineData,line)
+					handValues = re.findall(regexFloatInt2,lineData[0])
+					handValues = [float(i) for i in handValues]
+					handTracker.append(handValues)
+				else:
+					handTracker.append([0 for i in range(handTrackerPointCt)])
 			else: # This is likely a Omron IMU line
 				if len(line) > 100: # This is probably a prototype data line if length is sufficient
 					deviceData = re.findall(queryDevice,line)
@@ -93,15 +107,19 @@ def parse(filePath): # Parse files
 						deviceDatas.append([0 for i in range(26)]) # Put an empty line in otherwise
 				elif len(line) > 40:
 					deviceDatas.append([0 for i in range(26)]) # Put an empty line in otherwise
-	return frame,time,sixdcal, positions, rotations, deviceDatas
+	return frame,time,sixdcal, positions, rotations, deviceDatas, handTracker
 
-def savePositionJan(positions,rotations,deviceDatas,time):
+def savePositionJan(positions,rotations,deviceDatas,time,handTracker):
 	data = []
 	data.append(time)
 	if deviceDatas:
 		data.append(deviceDatas)
-	[data.append(i) for i in positions]
-	[data.append(i) for i in rotations]
+	if positions:
+		[data.append(i) for i in positions]
+	if rotations:
+		[data.append(i) for i in rotations]
+	if handTracker:
+		data.append(handTracker)
 	lengths = []
 	for i in data:
 		lengths.append(len(i))
@@ -109,7 +127,7 @@ def savePositionJan(positions,rotations,deviceDatas,time):
 		print 'All arrays are equal length'
 		lengthsEqual = True
 		newData = data
-	else:
+ 	else:
 		print 'Arrays are not equal in length'
 		minLength = min(lengths)
 		newData = []
@@ -127,7 +145,7 @@ def savePositionJan(positions,rotations,deviceDatas,time):
 	return dataArray
 
 #%%
-path = '../../ART IR Tracker Setup/data/jan11/'
+path = '../../ART IR Tracker Setup/data/jan18/'
 #files = glob.glob(path+'log*.txt')
 #path = '../data/jan11/'
 files = glob.glob(path+'*.drf')
@@ -136,9 +154,9 @@ files = glob.glob(path+'*.drf')
 for file in files:
 	filePath = file
 	fileName = os.path.basename(file)[:-4]
-	frame,time,numBodies, positions, rotations, deviceDatas = parse(filePath)
-	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
-	dataArray = savePositionJan(positions,rotations,deviceDatas,time)
+	frame,time,numBodies, positions, rotations, deviceDatas,handTracker = parse(filePath)
+#	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
+	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker)
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
 
 
