@@ -55,7 +55,10 @@ def evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon):
 	clf.fit(X_train,y_train)
 	print 'R2 fit is ',clf.score(X_test,y_test)
 	y_pred = clf.predict(X_test)
-	error = np.sqrt((y_pred - y_test)**2)
+	if normyparam: # If we used normalization, we can transform back to real units
+		y_pred = (y_pred *(normyparam[1] - normyparam[2]) + normyparam[0])
+		y_test = (y_test *(normyparam[1] - normyparam[2]) + normyparam[0])
+	error = np.sqrt((y_pred - y_test)**2) # Error calculation
 	errorRel = []
 	for y in y_test:
 		if y != 0 :
@@ -64,18 +67,18 @@ def evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon):
 	
 	errorMean = np.nanmean(error)
 	errorRelative = (np.nanmean(errorRel)) * 100
-	print 'absolute error is %.2f mm'%errorMean
-	print 'overall relative error is %.2f %%'%errorRelative
+	print 'Mean absolute error is %.2f mm'%errorMean
+	print 'Mean relative error is %.2f %%'%errorRelative
 	return y_pred, errorRelative, error
 
 def SVR_Optimize(X_train,y_train):
 	print("Optimize system for best C, gamma values")
-#	C = [0.1,1,10,100]
-#	gamma = [0.1,1,10,100]
-#	epsilon= [0.1,1,10]
-	C = [0.1,1,10,100]
-	gamma = [0.1,1,10,100]
-	epsilon= [0.1,1,10]
+	C = [10**i for i in range(-5,-2)]
+	gamma = C
+	epsilon= C
+#	C = [0.01,0.1,1,10,100]
+#	gamma = [0.01,0.1,1,10,100]
+#	epsilon= [0.01,0.1,1,10,100]
 	performance = [[],[]]
 	for c in C:
 		for g in gamma:
@@ -103,35 +106,59 @@ def SVR_OptimizeGridSearch(X_train,y_train):
 	print(clf.best_params_)
 	return clf
 
-def bpf(data,high,low,freq):
-#	plt.figure()
-#	plt.plot(data[:,23:27])
-	freq = 60
-	filtCutoffHigh = 0.001
-	b, a = signal.butter(8, [filtCutoffHigh*2/freq],btype='highpass')
-	data = filtfilt(b,a,data)
+def bpf(data,high,low,freq,order):
+	plt.subplot(211)
+	plt.plot(data)
+	pltTitle = 'BPF: Order%i, HPF=%.2f Hz, LPF=%.2f'%(order,high,low)
+	plt.title(pltTitle)
+	freq = float(freq)
+	[b, a] = signal.butter(order, [high*2/freq],btype='highpass')
+	dataFilt = filtfilt(b,a,data,axis=0)
 	
-	filtCutoffLow = 2
-	b, a = signal.butter(8, [filtCutoffLow*2/freq],btype='lowpass')
-	data = filtfilt(b,a,data)
-#	plt.figure()
-#	plt.plot(data[:,23:27])
-	return data
-
+	b, a = signal.butter(order, [low*2/freq],btype='lowpass')
+	dataFilt = filtfilt(b,a,data,axis=0)
+	plt.subplot(212)
+	plt.plot(dataFilt)
+	return dataFilt
+	
+def hpf(data,high,order, freq):
+	plt.subplot(211)
+	plt.plot(data)
+	freq = float(freq)
+	pltTitle = 'HPF: Order%i, cutoff=%.2f Hz'%(order,high)
+	plt.title(pltTitle)
+	b, a = signal.butter(order, [high*2/freq],btype='highpass')
+	dataFilt = filtfilt(b,a,data,axis=0)
+	
+	
+	plt.subplot(212)
+	plt.plot(dataFilt)
+	return dataFilt
+	
+def smoothQuaternion(quat,tol=1e4):
+	plt.subplot(211)
+	plt.plot(quat)
+	for i in range(len(quat)-1):
+		row2 = quat[i+1,:]
+		row1 = quat[i,:]
+		if np.sum(np.abs(row2 - row1)) > tol:
+			quat[i+1,:] = quat[i,:]
+	plt.subplot(212)
+	plt.plot(quat)
+	return quat
 #%% Main
-filtHigh = 0.001
-filtLow = 5
+high = 0.1 # HPF filt freq, in Hz
+order = 5
+low = 5
 freq = 60
 # Reach Data
 # Train data
 afile = files[10]
 data = np.genfromtxt(afile,delimiter=',')
 #dataOrig1 = data
-#data = normalize(data,axis=0)
-#data = bpf(data,filtHigh, filtLow, freq)
 data = data[int(0.35*len(data)):int(0.80*len(data)),:]
+data = bpf(data,high, low, freq, order)
 X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
-
 #X,y,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
 #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42)
 
@@ -139,9 +166,8 @@ X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybrid
 afile = files[11]
 data = np.genfromtxt(afile,delimiter=',')
 dataOrig2 = data
-data = normalize(data,axis=0)
-#data = bpf(data,filtHigh, filtLow, freq)
 data = data[int(0.30*len(data)):int(0.75*len(data)),:]
+data = bpf(data,high, low, freq, order)
 X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data)
 
 
@@ -190,11 +216,57 @@ X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = load
 #data = normalize(data,axis=0)
 #data = data[int(0.2*len(data)):int(0.90*len(data)),:]
 #X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data)
+#%% Quaternion manual filter for smoothing
 
-X_train = (X_train - np.mean(X_train,axis=0))/(np.max(X_train,axis=0) - np.min(X_train,axis=0))
-y_train = (y_train - np.mean(y_train))/(np.max(y_train) - np.min(y_train))
+
+
+#%% Filter testing
+#high = 0.1 # HPF filt freq, in Hz
+#order = 5
+#low = 5
+#plt.subplot(211)
+#plt.plot(acc)
+#pltTitle = 'HPF: Order%i, cutoff=%.2f Hz'%(order,high)
+#plt.title(pltTitle)
+#b, a = signal.butter(order, [high*2/freq],btype='highpass')
+#accFilt = filtfilt(b,a,acc,axis=0)
+#
+#
+#plt.subplot(212)
+#plt.plot(accFilt)
+##plt.title(pltTitle)
+#hpf(acc,high,order,freq)
+#hpf(gyr,high,order,freq)
+##bpf(quat,high,1,freq,9)
+#%%
+#import numpy.fft as fft
+
+#from scipy.fftpack import fft
+##fftIN = hpf(gyr,high,order,freq)
+#fftIN = bpf(quat,high,10,freq,9)
+#
+#def fftplot(fftIN,freq,title='FFT plot'):
+#	# FFT plot of columns of data
+#	plt.figure()
+#	for i in range(fftIN.shape[1]):
+#		data = fftIN[:,i]
+#		freq = float(freq)
+#		yf = fft(data)
+#		N = len(yf)
+#		T = 1 / float(freq)
+#		xf = np.linspace(0.0, 1.0/(2.0*T), N/2)
+#		plt.semilogy(xf,2.0/N*np.abs(yf[0:N/2]))
+#	plt.title(title)
+#	return plt
+#fftplot(fftIN,freq,title='FFT quaternion')
+#%% Normalize train and test data with train data stats
+normXparam = [np.mean(X_train,axis=0), np.max(X_train,axis=0), np.mean(X_train,axis=0)]
+normyparam = [np.mean(y_train), np.max(y_train), np.min(y_train)]
 X_test = (X_test - np.mean(X_train,axis=0))/(np.max(X_train,axis=0) - np.min(X_train,axis=0))
 y_test = (y_test - np.mean(y_train))/(np.max(y_train) - np.min(y_train))
+X_train = (X_train - np.mean(X_train,axis=0))/(np.max(X_train,axis=0) - np.min(X_train,axis=0))
+y_train = (y_train - np.mean(y_train))/(np.max(y_train) - np.min(y_train))
+
 
 #%% Some Plots
 #plt.figure()
@@ -256,22 +328,28 @@ ax2.legend(bbox_to_anchor=(0., 1.3, 1., .102))
 #clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
 
 #clf = SVR_OptimizeGridSearch(X_train,y_train)
-C = 1
-gamma = 1
-epsilon = 0.001
-
+C = 0.1
+gamma = 0.1
+epsilon = 0.01
+#performance = SVR_Optimize(X_train,y_train)
 y_pred, errorRelative, error = evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon)
 
+#%% Results Plotting
+
+y_testmm = (y_test *(normyparam[1] - normyparam[2]) + normyparam[0])
+#y_pred = (y_pred *(normyparam[1] - normyparam[2]) + normyparam[0])
+#error = (error *(normyparam[1] - normyparam[2]) + normyparam[0])
 
 plt.figure()
 pltTitle = 'Relative Error %.2f%%. Predictions for C=%.3f, g=%.3f, e=%.2f'%(errorRelative,C,gamma,epsilon)
-plt.scatter(y_test,y_pred)
+plt.scatter(y_testmm,y_pred)
 plt.title(pltTitle)
-plt.ylabel('Predicted Distance')
-plt.xlabel('Real Distance')
+plt.ylabel('Predicted Distance (mm)')
+plt.xlabel('Real Distance (mm)')
 plt.legend()
-plt.ylim(np.min((y_test,y_pred)),np.max((y_test,y_pred)))
-plt.xlim(np.min((y_test,y_pred)),np.max((y_test,y_pred)))
+#plt.ylim((np.min((y_test,y_pred)))/plotPadding,np.max((y_test,y_pred)) * plotPadding)
+#plt.xlim(np.min((y_test,y_pred))/plotPadding,np.max((y_test,y_pred)) * plotPadding)
+
 
 plt.figure()
 plt.hist(error)
@@ -279,8 +357,7 @@ plt.title('Histogram of error')
 plt.ylabel('Occurences')
 #plt.xlabel('Error (mm)')
 
-print 'movement span was',(np.max(distances2,axis=1) - np.min(distances2,axis=1))
+print 'movement span (mm) was in each axis was ',(np.max(distances2,axis=1) - np.min(distances2,axis=1))
 
 
 #%%
-
