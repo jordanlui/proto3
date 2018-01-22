@@ -73,7 +73,7 @@ def evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon):
 
 def SVR_Optimize(X_train,y_train):
 	print("Optimize system for best C, gamma values")
-	C = [10**i for i in range(-5,-2)]
+	C = [10**i for i in range(-2,0)]
 	gamma = C
 	epsilon= C
 #	C = [0.01,0.1,1,10,100]
@@ -106,7 +106,7 @@ def SVR_OptimizeGridSearch(X_train,y_train):
 	print(clf.best_params_)
 	return clf
 
-def bpf(data,high,low,freq,order):
+def bpf(data,high,low,order,freq):
 	plt.subplot(211)
 	plt.plot(data)
 	pltTitle = 'BPF: Order%i, HPF=%.2f Hz, LPF=%.2f'%(order,high,low)
@@ -151,74 +151,68 @@ high = 0.1 # HPF filt freq, in Hz
 order = 5
 low = 5
 freq = 60
-# Reach Data
-# Train data
-afile = files[10]
-data = np.genfromtxt(afile,delimiter=',')
-#dataOrig1 = data
-data = data[int(0.35*len(data)):int(0.80*len(data)),:]
-data = bpf(data,high, low, freq, order)
-X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
-#X,y,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42)
 
-# Test Data
-afile = files[11]
-data = np.genfromtxt(afile,delimiter=',')
-dataOrig2 = data
-data = data[int(0.30*len(data)):int(0.75*len(data)),:]
-data = bpf(data,high, low, freq, order)
-X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data)
+## Reach Data
+## Train data
+#afile = files[10]
+#data = np.genfromtxt(afile,delimiter=',')
+#data = data[int(0.35*len(data)):int(0.80*len(data)),:]
+
+#
+## Test Data
+#afile = files[11]
+#data2 = np.genfromtxt(afile,delimiter=',')
+#data2 = data2[int(0.30*len(data2)):int(0.75*len(data2)),:]
 
 
 ## Raised Elbow Flex Data
 ## Train data
 #afile = files[5]
 #data = np.genfromtxt(afile,delimiter=',')
-#data = normalize(data,axis=0)
 #data = data[int(0.25*len(data)):int(0.94*len(data)),:]
-#X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
-##X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42)
 #
 ## Test Data
 #afile = files[6]
-#data = np.genfromtxt(afile,delimiter=',')
-#data = normalize(data,axis=0)
-#data = data[int(0.2*len(data)):int(0.90*len(data)),:]
-#X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data)
+#data2 = np.genfromtxt(afile,delimiter=',')
+#data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
+
 #
 ## Circle square movements
 ## Train data
 #afile = files[13]
 #data = np.genfromtxt(afile,delimiter=',')
 #data = data[int(0.25*len(data)):int(0.94*len(data)),:]
-#X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
-##X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42)
+##X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
 #
 ## Test Data
 #afile = files[14]
-#data = np.genfromtxt(afile,delimiter=',')
-#data = data[int(0.2*len(data)):int(0.90*len(data)),:]
-#X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data)
+#data2 = np.genfromtxt(afile,delimiter=',')
+#data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 
-## Shoulder Raising
-## Train data
-#afile = files[3]
-#data = np.genfromtxt(afile,delimiter=',')
-#data = normalize(data,axis=0)
-#data = data[int(0.25*len(data)):int(0.92*len(data)),:]
+
+# Shoulder Raising
+# Train data
+afile = files[3]
+data = np.genfromtxt(afile,delimiter=',')
+data = data[int(0.25*len(data)):int(0.92*len(data)),:]
 #X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
-##X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42)
-#
-## Test Data
-#afile = files[4]
-#data = np.genfromtxt(afile,delimiter=',')
-#data = normalize(data,axis=0)
-#data = data[int(0.2*len(data)):int(0.90*len(data)),:]
+
+
+# Test Data
+afile = files[4]
+data2 = np.genfromtxt(afile,delimiter=',')
+data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 #X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data)
-#%% Quaternion manual filter for smoothing
 
+# Filter
+data[:,17:23] = hpf(data[:,17:23],high, order, freq) # acc and gyro filtering
+data2[:,17:23] = hpf(data2[:,17:23],high, order, freq) # acc and gyro filtering
+#data[:,23:27] = smoothQuaternion(data[:,23:27],tol=1e4) # Quaternion
+#data2[:,23:27] = smoothQuaternion(data2[:,23:27],tol=1e4) # Quaternion
 
+# Parse out data
+X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
+X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data2)
 
 #%% Filter testing
 #high = 0.1 # HPF filt freq, in Hz
@@ -327,8 +321,7 @@ ax2.legend(bbox_to_anchor=(0., 1.3, 1., .102))
 #%% Model prediction on wrist distance data
 #clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
 
-#clf = SVR_OptimizeGridSearch(X_train,y_train)
-C = 0.1
+C = 0.01
 gamma = 0.1
 epsilon = 0.01
 #performance = SVR_Optimize(X_train,y_train)
@@ -355,7 +348,7 @@ plt.figure()
 plt.hist(error)
 plt.title('Histogram of error')
 plt.ylabel('Occurences')
-#plt.xlabel('Error (mm)')
+plt.xlabel('Error (mm)')
 
 print 'movement span (mm) was in each axis was ',(np.max(distances2,axis=1) - np.min(distances2,axis=1))
 
