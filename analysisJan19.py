@@ -22,7 +22,7 @@ from scipy.signal import filtfilt
 plt.close("all")
 
 #%% Runtime parameters
-path = ('../analysis/jan12/')
+path = ('../analysis/jan19/')
 files = glob.glob(path + 'log*.csv')
 #afile = files[12]
 #%% Functions
@@ -151,6 +151,24 @@ def smoothQuaternion(quat,tol=1e4):
 def filesCV(files):
 	# Cross validation across files
 	return
+
+def smooth(data,tol=500):
+	# Smooth column of data
+	# useful for distance data, which has some distance spikes
+	for i in range(len(data)-1):
+		row2 = data[i+1]
+		row1 = data[i]
+		if abs(row2-row1) > tol:
+			data[i+1] = row1
+	return data
+def distanceCorrection(data,tol=500):
+	# Threshold correction of data
+	# useful for distance data, which has some distance spikes
+	for i in range(len(data)-1):
+		if data[i+1] > tol:
+			data[i+1] = data[i] # Current decision: Freeze in place and take previous value
+	return data
+
 #%% Main
 high = 0.1 # HPF filt freq, in Hz
 order = 5
@@ -159,27 +177,39 @@ freq = 60
 dataTrain = []
 # Reach Data
 # Train data
-afile = files[10]
+
+afile = files[0]
 data = np.genfromtxt(afile,delimiter=',')
-data = data[int(0.35*len(data)):int(0.80*len(data)),:]
+data = data[int(0.3*len(data)):int(0.90*len(data)),:]
+dataTrain.append(data)
+
+afile = files[1]
+data = np.genfromtxt(afile,delimiter=',')
+data = data[int(0.2*len(data)):int(0.90*len(data)),:]
 dataTrain.append(data)
 
 # Test Data
-afile = files[11]
-data2 = np.genfromtxt(afile,delimiter=',')
-data2 = data2[int(0.30*len(data2)):int(0.75*len(data2)),:]
-
-
-# Raised Elbow Flex Data
-# Train data
-afile = files[5]
+afile = files[2]
 data = np.genfromtxt(afile,delimiter=',')
-data = data[int(0.25*len(data)):int(0.94*len(data)),:]
+data = data[int(0.2*len(data)):int(0.99*len(data)),:]
 dataTrain.append(data)
-# Test Data
-afile = files[6]
-data2 = np.genfromtxt(afile,delimiter=',')
-data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
+
+
+afile = files[3]
+data = np.genfromtxt(afile,delimiter=',')
+data = data[int(0.23*len(data)):int(0.90*len(data)),:]
+dataTrain.append(data)
+
+## Raised Elbow Flex Data
+## Train data
+#afile = files[5]
+#data = np.genfromtxt(afile,delimiter=',')
+#data = data[int(0.25*len(data)):int(0.94*len(data)),:]
+#dataTrain.append(data)
+## Test Data
+#afile = files[6]
+#data2 = np.genfromtxt(afile,delimiter=',')
+#data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 
 #
 ## Circle square movements
@@ -194,16 +224,16 @@ data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 #data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 
 
-# Shoulder Raising
-# Train data
-afile = files[3]
-data = np.genfromtxt(afile,delimiter=',')
-data = data[int(0.25*len(data)):int(0.92*len(data)),:]
-dataTrain.append(data)
-# Test Data
-afile = files[4]
-data2 = np.genfromtxt(afile,delimiter=',')
-data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
+## Shoulder Raising
+## Train data
+#afile = files[3]
+#data = np.genfromtxt(afile,delimiter=',')
+#data = data[int(0.25*len(data)):int(0.92*len(data)),:]
+#dataTrain.append(data)
+## Test Data
+#afile = files[4]
+#data2 = np.genfromtxt(afile,delimiter=',')
+#data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 
 ## Random movements
 ## Train data
@@ -223,7 +253,8 @@ data2 = data2[int(0.2*len(data2)):int(0.90*len(data2)),:]
 
 # Mash all training data together
 #data = np.vstack((dataTrain))
-
+data = dataTrain[1]
+data2 = dataTrain[0]
 # Filter
 data[:,17:23] = hpf(data[:,17:23],high, order, freq) # acc and gyro filtering
 data2[:,17:23] = hpf(data2[:,17:23],high, order, freq) # acc and gyro filtering
@@ -234,45 +265,15 @@ data2[:,17:23] = hpf(data2[:,17:23],high, order, freq) # acc and gyro filtering
 X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(data)
 X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(data2)
 
-#%% Filter testing
-#high = 0.1 # HPF filt freq, in Hz
-#order = 5
-#low = 5
-#plt.subplot(211)
-#plt.plot(acc)
-#pltTitle = 'HPF: Order%i, cutoff=%.2f Hz'%(order,high)
-#plt.title(pltTitle)
-#b, a = signal.butter(order, [high*2/freq],btype='highpass')
-#accFilt = filtfilt(b,a,acc,axis=0)
-#
-#
-#plt.subplot(212)
-#plt.plot(accFilt)
-##plt.title(pltTitle)
-#hpf(acc,high,order,freq)
-#hpf(gyr,high,order,freq)
-##bpf(quat,high,1,freq,9)
-#%%
-#import numpy.fft as fft
+# Physical constraints, kinematics, and anatomy
+distanceTol = 450
+distances = [distanceCorrection(i,tol=distanceTol) for i in distances]
+distances2 = [distanceCorrection(i,tol=distanceTol) for i in distances2]
 
-#from scipy.fftpack import fft
-##fftIN = hpf(gyr,high,order,freq)
-#fftIN = bpf(quat,high,10,freq,9)
-#
-#def fftplot(fftIN,freq,title='FFT plot'):
-#	# FFT plot of columns of data
-#	plt.figure()
-#	for i in range(fftIN.shape[1]):
-#		data = fftIN[:,i]
-#		freq = float(freq)
-#		yf = fft(data)
-#		N = len(yf)
-#		T = 1 / float(freq)
-#		xf = np.linspace(0.0, 1.0/(2.0*T), N/2)
-#		plt.semilogy(xf,2.0/N*np.abs(yf[0:N/2]))
-#	plt.title(title)
-#	return plt
-#fftplot(fftIN,freq,title='FFT quaternion')
+y_test = distanceCorrection(y_test,tol=distanceTol)
+y_train = distanceCorrection(y_train,tol=distanceTol)
+
+
 #%% Normalize train and test data with train data stats
 normXparam = [np.mean(X_train,axis=0), np.max(X_train,axis=0), np.mean(X_train,axis=0)]
 normyparam = [np.mean(y_train), np.max(y_train), np.min(y_train)]
@@ -293,7 +294,7 @@ plt.plot(time,distances[0],label='Wrist to upper arm')
 plt.plot(time,distances[1],label='Forearm to wrist')
 plt.plot(time,distances[2],label='Upper Arm to forearm')
 plt.title('Distances')
-plt.ylabel('Distance (mm)')
+plt.ylabel('Distance (mm), file 1')
 plt.legend()
 
 plt.figure()
@@ -302,7 +303,7 @@ plt.plot(time2,distances2[0],label='Wrist to upper arm (file2)')
 plt.plot(time2,distances2[1],label='Forearm to wrist')
 plt.plot(time2,distances2[2],label='Upper Arm to forearm')
 plt.title('Distances')
-plt.ylabel('Distance (mm)')
+plt.ylabel('Distance (mm), file 2')
 plt.legend()
 
 plt.figure()
@@ -364,18 +365,36 @@ gamma = 0.1
 epsilon = 0.01
 #performance = SVR_Optimize(X_train,y_train)
 y_pred, errorRelative, error = evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon)
-#%% Cross validation and training with all values
+
+
+#%% Try Tree regression method
+from sklearn import tree
+modelTree = tree.DecisionTreeRegressor(max_depth=3)
+modelTree = modelTree.fit(X_train,y_train)
+y_predTree = modelTree.predict(X_test)
+errorTree = y_predTree - y_test
+modelTree.score
+y_predTreemm = (y_predTree *(normyparam[1] - normyparam[2]) + normyparam[0])
+y_testmm = (y_test *(normyparam[1] - normyparam[2]) + normyparam[0])
+plt.figure()
+plt.scatter(y_testmm,y_predTreemm)
+plt.figure()
+plt.plot(y_testmm,label='Test Data')
+plt.plot(y_predTreemm, label='Prediction')
+plt.legend()
+plt.title('Prediction with tree method')
+errorTree = np.sqrt((y_predTreemm - y_testmm)**2)
+print 'mean error for tree method is %.2f mm'%(np.mean(errorTree))
+
+#%% Cross Val
 #accuracyResult = []
-#for i in range(len(files)):
-#	testFile = files[i]
-#	testData = np.genfromtxt(testFile,delimiter=',')
+#for i in range(len(dataTrain)):
+#	testData = dataTrain[i]
+#	
 #	testData[:,17:23] = hpf(testData[:,17:23],high, order, freq) # acc and gyro filtering	
 #	X_test,y_test,distances2,time2,omron2,acc2,gyr2,quat2,position2,rotation2 = loadHybridData(testData)
-#	trainFiles = files[:i] + files[i+1:]
-#	trainData = []
-#	for trainFile in trainFiles:
-#		trainData.append(np.genfromtxt(trainFile,delimiter=','))
-#	trainData = np.vstack((trainData))
+#	trainingFiles = dataTrain[:i] + dataTrain[i+1:]
+#	trainData = np.vstack((trainingFiles))
 #	trainData[:,17:23] = hpf(trainData[:,17:23],high, order, freq) # acc and gyro filtering
 #	
 #	X_train,y_train,distances,time,omron,acc,gyr,quat,position,rotation = loadHybridData(trainData)
@@ -387,13 +406,14 @@ y_pred, errorRelative, error = evalModel(X_train,y_train,X_test,y_test,C,gamma,e
 #	y_train = (y_train - np.mean(y_train))/(np.max(y_train) - np.min(y_train))
 #	y_pred, errorRelative, error = evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon)
 #	accuracyResult.append(errorRelative)
-#	print testFile, errorRelative
+#	print errorRelative
+
 #%% Results Plotting
 
 y_testmm = (y_test *(normyparam[1] - normyparam[2]) + normyparam[0])
 #y_pred = (y_pred *(normyparam[1] - normyparam[2]) + normyparam[0])
 #error = (error *(normyparam[1] - normyparam[2]) + normyparam[0])
-pltPadding = 1.1
+plotPadding = 1
 plt.figure()
 pltTitle = 'Relative Error %.2f%%. Predictions for C=%.3f, g=%.3f, e=%.2f'%(errorRelative,C,gamma,epsilon)
 plt.scatter(y_testmm,y_pred)
@@ -401,15 +421,9 @@ plt.title(pltTitle)
 plt.ylabel('Predicted Distance (mm)')
 plt.xlabel('Real Distance (mm)')
 plt.legend()
-#plt.ylim((np.min((y_test,y_pred)))/plotPadding,np.max((y_test,y_pred)) * plotPadding)
-#plt.xlim(np.min((y_test,y_pred))/plotPadding,np.max((y_test,y_pred)) * plotPadding)
-
-
-plt.figure()
-plt.hist(error)
-plt.title('Histogram of error')
-plt.ylabel('Occurences')
-plt.xlabel('Error (mm)')
+axisLim = (np.min(y_pred),np.max(y_pred))
+#plt.ylim((np.min((y_testmm,y_pred)))/plotPadding,np.max((y_testmm,y_pred)) * plotPadding)
+plt.xlim(axisLim)
 
 # Remove error values beyond physical tolerances
 lengthWristArm = 400 # Max length wrist to upper arm of Jordan (38-40cm)
@@ -423,6 +437,13 @@ for i in range(len(error)):
 		y_predCorrected.append(y_pred[i])
 		
 
+plt.figure()
+plt.hist(error)
+plt.title('Histogram of error')
+plt.ylabel('Occurences')
+plt.xlabel('Error (mm)')
+
+plotPadding = 1
 plt.figure()
 pltTitle = 'Outliers rejected. Relative Error %.2f%%. Predictions for C=%.3f, g=%.3f, e=%.2f'%(errorRelative,C,gamma,epsilon)
 plt.scatter(y_testmmCorrected,y_predCorrected)
@@ -442,6 +463,7 @@ plt.ylabel('Occurences')
 plt.xlabel('Error (mm)')
 
 print 'movement span (mm) was in each axis was ',(np.max(distances2,axis=1) - np.min(distances2,axis=1))
-
+print 'Mean error is %.2f mm',np.mean(error)
+print 'Mean error (outliers removed) is %.2f mm',np.mean(errorCorrected)
 
 #%%
