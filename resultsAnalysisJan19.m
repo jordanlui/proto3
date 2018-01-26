@@ -49,11 +49,16 @@ M = length(datas);
 
 %% Dead Reckon with Madgwick Algorithm
 % Data Prep (Always pass clean data to algorithm!)
-gyrCalStationary = [-2.172099087	1.585397653	2.456323338];
+% gyrCalStationary = [-2.172099087	1.585397653	2.456323338];
+load('BITcalibration20170125.mat')
 
-accIn = acc./8000;
-gyrIn = gyr - gyrCalStationary;
-gyrIn = gyrIn./2000;
+% Runtime parameters
+accScale = 8192;
+gyrScale = 16.4;
+
+accIn = acc./accScale;
+gyrIn = gyr - gyrCal;
+gyrIn = gyrIn./gyrScale;
 pos3 = deadReckonMadgwickOscillationFunc(accIn,gyrIn,freq,0.1);
 
 figure()
@@ -77,8 +82,8 @@ title('Motion Tracker Wrist Position')
 hold off
 1
 % Output data to file
-csvwrite('data1.csv',data)
-csvwrite('position1.csv',pos3)
+% csvwrite('data1.csv',data)
+% csvwrite('position1.csv',pos3)
 %% Build Model
 % After creating model in Regression Learner
 % [trainedModel, validationRMSE] = trainRegressionModel(data1);

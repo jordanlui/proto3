@@ -110,8 +110,11 @@ def parse(filePath): # Parse files
 	return frame,time,sixdcal, positions, rotations, deviceDatas, handTracker
 
 def savePositionJan(positions,rotations,deviceDatas,time,handTracker):
+	# Unite ART and proto data into array for saving
+	# Built to be extensible to the number of tracker objects present
 	data = []
-	data.append(time)
+	if time:
+		data.append(time)
 	if deviceDatas:
 		data.append(deviceDatas)
 	if positions:
@@ -145,10 +148,11 @@ def savePositionJan(positions,rotations,deviceDatas,time,handTracker):
 	return dataArray
 
 #%%
-path = '../../ART IR Tracker Setup/data/jan18/'
+#path = '../../ART IR Tracker Setup/data/jan18/'
+path = '../BITBoard/Gyro Accelerometer Unit Analysis/'
 #files = glob.glob(path+'log*.txt')
 #path = '../data/jan11/'
-files = glob.glob(path+'*.drf')
+files = glob.glob(path+'*.txt')
 
 
 for file in files:
@@ -157,6 +161,7 @@ for file in files:
 	frame,time,numBodies, positions, rotations, deviceDatas,handTracker = parse(filePath)
 #	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
 	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker)
+#	dataArray = np.array(deviceDatas)	 # Just create array if the data is Proto IMU only
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
 
 
