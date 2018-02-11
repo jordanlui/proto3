@@ -15,8 +15,8 @@ import glob, os
 
 #%% Regular expression queries for validating intact ART data
 #filePath = '../data/body.drf'
-filePath = '../data/elbowFlex1.drf'
-fileName = re.findall('.*/(.+).drf',filePath)[0]
+#filePath = '../data/elbowFlex1.drf'
+#fileName = re.findall('.*/(.+).drf',filePath)[0]
 dataLabelSearch = '([a-zA-Z0-9]+) .+' # RegEx Search string for the alphanum labels
 dataLabels=['fr','ts','6dcal','6d','6di','6df2','glcal','gl'] # Search string for alphanum labels
 regexFloat = '[a-z0-9]+ ([0-9.]+)' # Regex for the float values
@@ -109,59 +109,84 @@ def parse(filePath): # Parse files
 					deviceDatas.append([0 for i in range(26)]) # Put an empty line in otherwise
 	return frame,time,sixdcal, positions, rotations, deviceDatas, handTracker
 
-def savePositionJan(positions,rotations,deviceDatas,time,handTracker):
+def savePositionJan(positions,rotations,deviceDatas,time,handTracker,fileName):
 	# Unite ART and proto data into array for saving
 	# Built to be extensible to the number of tracker objects present
+	# Make a list to hold all available data in
 	data = []
+	
+	# Check for time values from ART System
 	if time:
 		data.append(time)
+	# Check for IR Device data
 	if deviceDatas:
 		data.append(deviceDatas)
+	# Check for position data from ART System
 	if positions:
 		[data.append(i) for i in positions]
+	# Check for rotation data from ART System
 	if rotations:
 		[data.append(i) for i in rotations]
+	# Check for hand tracker data from ART System
 	if handTracker:
 		data.append(handTracker)
+	
+	
+	
+	# Check that data arrays are equal length
 	lengths = []
 	for i in data:
 		lengths.append(len(i))
-	if lengths[1:] == lengths[:-1]:
-		print 'All arrays are equal length'
-		lengthsEqual = True
-		newData = data
- 	else:
-		print 'Arrays are not equal in length'
-		minLength = min(lengths)
-		newData = []
-		for i in data:
-			newData.append(i[:minLength])
-		lengthsEqual = True
+	# If lengths array has length 1, we likely have Omron Data
+	if len(lengths) == 1:
+		dataArray = np.array(data[0])
+	# Otherwise, we should ART and proto data
+	else:
 	
-	if lengthsEqual:
-		dataArray = np.array(newData[0]).reshape((len(newData[0]),1))# Put the time row in first
-		for i in range(1,len(newData)):
-#			print np.array(newData[i]).shape
-			dataArray = np.hstack((dataArray,np.array(newData[i])))
-				
+		if lengths[1:] == lengths[:-1]:
+			print 'All arrays are equal length'
+			lengthsEqual = True
+			newData = data
+	 	else:
+			print 'Arrays are not equal in length'
+			minLength = min(lengths)
+			newData = []
+			for i in data:
+				newData.append(i[:minLength])
+			lengthsEqual = True
+		
+		if lengthsEqual:
+			dataArray = np.array(newData[0]).reshape((len(newData[0]),1))# Put the time row in first
+			for i in range(1,len(newData)):
+	#			print np.array(newData[i]).shape
+				dataArray = np.hstack((dataArray,np.array(newData[i])))
+					
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
 	return dataArray
 
-#%%
-#path = '../../ART IR Tracker Setup/data/jan18/'
-path = '../BITBoard/Gyro Accelerometer Unit Analysis/'
-#files = glob.glob(path+'log*.txt')
-#path = '../data/jan11/'
-files = glob.glob(path+'*.txt')
-
-
-for file in files:
-	filePath = file
-	fileName = os.path.basename(file)[:-4]
+def parseSave(afile):
+	filePath = afile
+	fileName = os.path.basename(afile)[:-4]
 	frame,time,numBodies, positions, rotations, deviceDatas,handTracker = parse(filePath)
-#	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
-	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker)
-#	dataArray = np.array(deviceDatas)	 # Just create array if the data is Proto IMU only
+	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker,fileName)
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
+	return
+
+#%% Grab files
+#path = '../../ART IR Tracker Setup/data/jan18/'
+#path = '../Data/feb1/'
+##files = glob.glob(path+'log*.txt')
+##path = '../data/jan11/'
+#files = glob.glob(path+'*.txt')
+#
+#
+#for afile in files:
+#	filePath = afile
+#	fileName = os.path.basename(afile)[:-4]
+#	frame,time,numBodies, positions, rotations, deviceDatas,handTracker = parse(filePath)
+##	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
+#	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker)
+##	dataArray = np.array(deviceDatas)	 # Just create array if the data is Proto IMU only
+#	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
 
 

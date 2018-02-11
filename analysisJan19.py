@@ -357,7 +357,7 @@ plt.title('path of each ART device')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
-#%% Model prediction on wrist distance data
+#%% SVR Model prediction on wrist distance data
 #clf = SVR(kernel='rbf',C=1000, gamma=0.0001, epsilon = 0.1, max_iter=-1, shrinking=True, tol=0.001)
 
 C = 0.01
@@ -365,7 +365,20 @@ gamma = 0.1
 epsilon = 0.01
 #performance = SVR_Optimize(X_train,y_train)
 y_pred, errorRelative, error = evalModel(X_train,y_train,X_test,y_test,C,gamma,epsilon)
+#y_predmm = (y_pred *(normyparam[1] - normyparam[2]) + normyparam[0])
+y_testmm = (y_test *(normyparam[1] - normyparam[2]) + normyparam[0])
 
+plt.figure()
+plt.scatter(y_testmm,y_pred)
+plt.figure()
+plt.plot(y_testmm,label='Test Data')
+plt.plot(y_pred, label='Prediction')
+plt.legend()
+plt.title('Prediction with SVR method')
+plt.ylim((260,440))
+errorsvr = np.sqrt((y_pred - y_testmm)**2)
+rmseSVR = np.sqrt( np.sum((y_pred - y_testmm)**2)/len(y_testmm))
+print 'mean error for SVR is %.2f mm, RMSE %.2f'%(np.mean(errorsvr),rmseSVR)
 
 #%% Try Tree regression method
 from sklearn import tree
@@ -383,8 +396,52 @@ plt.plot(y_testmm,label='Test Data')
 plt.plot(y_predTreemm, label='Prediction')
 plt.legend()
 plt.title('Prediction with tree method')
+plt.ylim((260,440))
 errorTree = np.sqrt((y_predTreemm - y_testmm)**2)
-print 'mean error for tree method is %.2f mm'%(np.mean(errorTree))
+rmseTree = np.sqrt( np.sum((y_predTreemm - y_testmm)**2)/len(y_testmm))
+print 'mean error for tree method is %.2f mm. RMSE %.2f'%(np.mean(errorTree),rmseTree)
+
+#%% Kernel Ridge Regression
+#http://scikit-learn.org/stable/modules/generated/sklearn.kernel_ridge.KernelRidge.html#sklearn.kernel_ridge.KernelRidge
+from sklearn.kernel_ridge import KernelRidge
+modelkrr = KernelRidge(alpha=1.0)
+modelkrr.fit(X_train,y_train)
+y_predkrr = modelkrr.predict(X_test)
+y_predkrrmm = (y_predkrr *(normyparam[1] - normyparam[2]) + normyparam[0])
+
+plt.figure()
+plt.scatter(y_testmm,y_predkrrmm)
+plt.figure()
+plt.plot(y_testmm,label='Test Data')
+plt.plot(y_predkrrmm, label='Prediction')
+plt.legend()
+plt.title('Prediction with krr method')
+plt.ylim((260,440))
+errorkrr = np.sqrt((y_predkrrmm - y_testmm)**2)
+rmsekrr = np.sqrt( np.sum((y_predkrrmm - y_testmm)**2)/len(y_testmm))
+print 'mean error for krr is %.2f mm, RMSE %.2f'%(np.mean(errorkrr),rmsekrr)
+
+#%% Neural Network
+from sklearn.neural_network import MLPRegressor
+modelNN = MLPRegressor(hidden_layer_sizes=30,activation='relu')
+modelNN.fit(X_train,y_train)
+modelNN.score
+y_predNN = modelNN.predict(X_test)
+ypredNNmm = (y_predNN *(normyparam[1] - normyparam[2]) + normyparam[0])
+errorNN = np.sqrt((ypredNNmm - y_testmm)**2)
+rmseNN = np.sqrt( np.sum((ypredNNmm - y_testmm)**2)/len(y_testmm))
+
+plt.figure()
+plt.scatter(y_testmm,ypredNNmm)
+plt.figure()
+plt.plot(y_testmm,label='Test Data')
+plt.plot(ypredNNmm, label='Prediction')
+plt.legend()
+plt.title('Prediction with krr method')
+plt.ylim((260,440))
+errorNN = np.sqrt((ypredNNmm - y_testmm)**2)
+rmseNN = np.sqrt( np.sum((ypredNNmm - y_testmm)**2)/len(y_testmm))
+print 'mean error for NN is %.2f mm, RMSE %.2f'%(np.mean(errorNN),rmseNN)
 
 #%% Cross Val
 #accuracyResult = []
