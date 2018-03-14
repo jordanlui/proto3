@@ -25,17 +25,32 @@ files = dir(strcat(path1,'*.csv'));
 % dataRaw = csvread(files(12).name); % Standing pronation
 % dataRaw = dataRaw(794:end,:);
 
-% dataRaw = csvread(files(13).name); % Elbow flex
-% dataRaw = dataRaw(660:end,:);
+dataRaw = csvread(files(13).name); % Elbow flex
+dataRaw = dataRaw(660:end,:);
 % 
 % dataRaw = csvread(files(14).name); % Reach to collar
 % dataRaw = dataRaw(775:end,:);
 
-dataRaw = csvread(files(15).name); % Walking
-data = jointLoader(dataRaw,tolDistance,jointLabel);
+% dataRaw = csvread(files(15).name); % Walking
+
+% dataRaw = csvread(files(18).name); % Reaching and pronating
+% dataRaw = dataRaw(667:2811,:);
+% 
+% dataRaw = csvread(files(20).name); % Reaching and pronating 2, possibly errors occured
+% dataRaw = dataRaw(577:2911,:);
 
 % dataRaw = csvread(files(21).name); % Reaching sideways to the left
 % dataRaw = dataRaw(540:2185,:);
+
+% dataRaw = csvread(files(22).name); % vertical
+% dataRaw = dataRaw(700:2900,:);
+
+
+% dataRaw = csvread(files(23).name); % L-R swing
+% dataRaw = dataRaw(700:end,:);
+
+% dataRaw = csvread(files(24).name); % L-R swing
+% dataRaw = dataRaw(700:end,:);
 
 % dataRaw = csvread(files(28).name); % Reach for box, unaffected
 % dataRaw = dataRaw(660:2230,:);
@@ -43,8 +58,7 @@ data = jointLoader(dataRaw,tolDistance,jointLabel);
 % dataRaw = csvread(files(30).name); % Reach for box, spastic
 % dataRaw = dataRaw(796:end,:);
 
-
-
+data = jointLoader(dataRaw,tolDistance,jointLabel,0);
 figure(1)
 hold on; plot(data.wrist); plot(data.forearm); plot(data.arm); plot(data.chest); hold off
 legend('wrist','forearm','arm','chest'); title('coordinates vs. time')
@@ -55,37 +69,53 @@ legend('wrist','forearm','arm','chest'); title('coordinates vs. time')
 figure(2)
 plotallJoints3D(data.joints,'3d plot all joints',jointLabel)
 
+% Get the row, col, quadrant summaries
+[row, col, quadrant] = omronAnalysis(data.omron(data.distCheck,:));
 
-%%
-% close all
-[row, col, quadrant] = omronAnalysis(data.omron(data.distCheck,:))
-
-
-figure(10)
-suptitle('Temp distribution by row, column, quadrant')
-nbins = 10;
-for i = 1:4
-    subplot(4,3,3*(i-1)+1)
-    histogram(row.mean{i},nbins)
-    xlim([210 300])
-    
-    subplot(4,3,3*(i-1)+2)
-    histogram(col.mean{i},nbins)
-    xlim([210 300])
-    
-    subplot(4,3,3*(i-1)+3)
-    histogram(quadrant.mean{i},nbins)
-    xlim([210 300])
-end
-saveas(gcf,'histogramRowColQuad.png')
-
-%% Temp changes across different axes of movement
-figure(11)
+% Temp changes across different axes of movement
+figure(3)
 tempDirections(data.omron(data.distCheck,:),row,col,quadrant)
 saveas(gcf,'TempSpan.png')
 
+%% Compare reach values
+% dataRaw = csvread(files(28).name); % Reach for box, unaffected
+% dataRaw = dataRaw(660:2230,:);
+% data1 = jointLoader(dataRaw,tolDistance,jointLabel);
+% 
+% dataRaw = csvread(files(30).name); % Reach for box, spastic
+% dataRaw = dataRaw(796:end,:);
+% data2 = jointLoader(dataRaw,tolDistance,jointLabel);
+% compareTrials(data1,data2)
+
+%% Compare arm raising movement
+% dataRaw = csvread(files(23).name); % L-R swing
+% dataRaw = dataRaw(700:end,:);
+% data1 = jointLoader(dataRaw,tolDistance,jointLabel);
+% 
+% dataRaw = csvread(files(24).name); % L-R swing
+% dataRaw = dataRaw(700:end,:);
+% data2 = jointLoader(dataRaw,tolDistance,jointLabel);
+% compareTrials(data1,data2)
 
 %% Functions
+function compareTrials(data1,data2)
+    
+    [row1, col1, quadrant1] = omronAnalysis(data1.omron(data1.distCheck,:));
+    figure(4)
+    subplot(2,2,1); title('Temp Span, Nominal')
+    tempDirections(data1.omron(data1.distCheck,:),row1,col1,quadrant1)
+    subplot(2,2,3); title('Temp vs. Distance')
+    tempDistance(data1.distWristChest(data1.distCheck),data1.omron(data1.distCheck,:),row1,col1,quadrant1)
+
+    
+    [row2, col2, quadrant2] = omronAnalysis(data2.omron(data2.distCheck,:));
+    subplot(2,2,2); title('Temp Span, Affected')
+    tempDirections(data2.omron(data2.distCheck,:),row2,col2,quadrant2)
+    subplot(2,2,4); title('Temp vs. Distance')
+    tempDistance(data2.distWristChest(data2.distCheck),data2.omron(data2.distCheck,:),row2,col2,quadrant2)
+
+end
+
 function [row,col,quadrant] = omronAnalysis(omron)
     % Consider Omron variances by columns and by rows
     for i=1:4
@@ -108,6 +138,26 @@ function [row,col,quadrant] = omronAnalysis(omron)
     end
 
 end
+
+function tempDistance(distance,omron,row,col,quadrant)
+    % Plot temperature differences in against distance
+    row.diff = max([row.mean{1},row.mean{2},row.mean{3},row.mean{4}],[],2) - min([row.mean{1},row.mean{2},row.mean{3},row.mean{4}],[],2);
+    col.diff = max([col.mean{1},col.mean{2},col.mean{3},col.mean{4}],[],2) - min([col.mean{1},col.mean{2},col.mean{3},col.mean{4}],[],2);
+    quadrant.diff = max([quadrant.mean{1},quadrant.mean{2},quadrant.mean{3},quadrant.mean{4}],[],2) - min([quadrant.mean{1},quadrant.mean{2},quadrant.mean{3},quadrant.mean{4}],[],2);
+    suptitle('Relating Omron to distance')
+    hold on
+    ylabel('Temp difference')
+    xlabel('distance')
+    scatter(distance,row.diff)
+    scatter(distance,col.diff)
+    scatter(distance,quadrant.diff)
+%     yyaxis right
+%     scatter(distance,mean(omron,2))
+%     ylabel('Mean temperature')
+    hold off
+    legend('row','col','quad','mean')
+end
+
 function tempDirections(omron,row,col,quadrant)
     % Plot temperature differences in various axis directions
     

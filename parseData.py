@@ -30,6 +30,10 @@ query6di = '((\[(?:(?:-??[0-9]+\.??[0-9]*) ??){3}\])(\[(?:(?:-??[0-9]+\.??[0-9]*
 queryLineData = '\[.*\]' # All data in a line, starting and ending with []
 handTrackerPointCt = 70 # Number of elements expected for hand tracker data
 
+protoDataMinLength = 100 # Min Character length of proto data. Helps to reject the "connected" starter messages
+protoNumEl = 29 # Num elements in proto line
+protoMinEl = 26
+
 #%% Functions
 def BodyPosition(query,string):
     # Search for position data and return as a list of float values
@@ -49,6 +53,7 @@ def BodyRotation(query,string):
 #	# Search for hand data nad return list of float values
 				
 def parse(filePath): # Parse files
+	# Parse ART and Proto data and return in arrays
 	file = open(filePath,'r') # Open file
 	# Data Arrays
 	dataLabel = []
@@ -98,9 +103,11 @@ def parse(filePath): # Parse files
 				else:
 					handTracker.append([0 for i in range(handTrackerPointCt)])
 			else: # This is likely a Omron IMU line
-				if len(line) > 100: # This is probably a prototype data line if length is sufficient
+				if len(line) > protoDataMinLength: # This is probably a prototype data line if length is sufficient
+					# Use RegEx to grab all elements					
 					deviceData = re.findall(queryDevice,line)
-					if len(deviceData) == 26:
+					# If length is sufficient, write into list. Cast to int
+					if len(deviceData) >= protoMinEl:
 						deviceData = [int(i) for i in deviceData]
 						deviceDatas.append(deviceData)
 					else:
@@ -109,12 +116,11 @@ def parse(filePath): # Parse files
 					deviceDatas.append([0 for i in range(26)]) # Put an empty line in otherwise
 	return frame,time,sixdcal, positions, rotations, deviceDatas, handTracker
 
-def savePositionJan(positions,rotations,deviceDatas,time,handTracker,fileName):
+def joinProtoART(positions,rotations,deviceDatas,time,handTracker,fileName):
 	# Unite ART and proto data into array for saving
 	# Built to be extensible to the number of tracker objects present
 	# Make a list to hold all available data in
 	data = []
-	
 	# Check for time values from ART System
 	if time:
 		data.append(time)
@@ -130,8 +136,6 @@ def savePositionJan(positions,rotations,deviceDatas,time,handTracker,fileName):
 	# Check for hand tracker data from ART System
 	if handTracker:
 		data.append(handTracker)
-	
-	
 	
 	# Check that data arrays are equal length
 	lengths = []
@@ -168,25 +172,6 @@ def parseSave(afile):
 	filePath = afile
 	fileName = os.path.basename(afile)[:-4]
 	frame,time,numBodies, positions, rotations, deviceDatas,handTracker = parse(filePath)
-	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker,fileName)
+	dataArray = joinProtoART(positions,rotations,deviceDatas,time,handTracker,fileName)
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
 	return
-
-#%% Grab files
-#path = '../../ART IR Tracker Setup/data/jan18/'
-#path = '../Data/feb1/'
-##files = glob.glob(path+'log*.txt')
-##path = '../data/jan11/'
-#files = glob.glob(path+'*.txt')
-#
-#
-#for afile in files:
-#	filePath = afile
-#	fileName = os.path.basename(afile)[:-4]
-#	frame,time,numBodies, positions, rotations, deviceDatas,handTracker = parse(filePath)
-##	len(frame), len(time), len(positions[0]), len(rotations[0]), len(deviceDatas) # Check data length
-#	dataArray = savePositionJan(positions,rotations,deviceDatas,time,handTracker)
-##	dataArray = np.array(deviceDatas)	 # Just create array if the data is Proto IMU only
-#	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
-
-

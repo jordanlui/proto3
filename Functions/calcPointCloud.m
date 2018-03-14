@@ -12,9 +12,8 @@ printoutStep = 2e4;
 disp('Starting permuations. Expected number iterations:')
 numIter = ceil(prod((ROM(:,2) - ROM(:,1))./stepSize));
 angles = zeros(numIter,5);
-elbowPos = cell(numIter,1);
-wristPos = cell(numIter,1);
-% rotation = cell(numIter,1);
+elbowPos = zeros(numIter,3);
+wristPos = zeros(numIter,3);
 rotation = zeros(numIter,9);
 
 cnt = 1;
@@ -26,14 +25,10 @@ for i=ROM(1,1):stepSize:ROM(1,2)
             for l = ROM(4,1):stepSize:ROM(4,2)
                 for m = ROM(5,1):stepSize:ROM(5,2)
                     [elbow, wrist] = armPose(dhparams,[i,k,j,l,0,0,m]');
-                    
-                    elbow.pos;
-                    wrist.pos;
-                    wrist.R;
                     angles(cnt,:) = [i j k l m];
-                    elbowPos{cnt} = elbow.pos';
-                    wristPos{cnt} = wrist.pos';
                     rotation(cnt,:) = reshape(wrist.R,[1,9]);
+                    elbowPos(cnt,:) = elbow.pos;
+                    wristPos(cnt,:) = wrist.pos;
                     cnt = cnt + 1;
                     if mod(cnt,printoutStep)==0
                         cnt

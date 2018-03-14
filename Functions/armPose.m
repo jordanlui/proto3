@@ -2,6 +2,8 @@ function [elbow, wrist] = armPose(dh,q)
     % Model arm pose based on DH parameter table. 
     % Returns coordinates of elbow and wrist
     % Kinematic model for Lui 2018, left arm
+    % Angles in q refer to Sh Extension, Sh Rotation, Sh Abduction, El
+    % Extension, Wrist Deviation, Wr Flexion, Wr Pronation
     
     
     dh(:,4) = dh(:,4) - q; % Modified angles
