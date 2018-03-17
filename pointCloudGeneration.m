@@ -26,6 +26,9 @@ length(rotation)
 save('pointClouds\pointCloudKlopcar_step20.mat','rotation','elbowPos','wristPos','angles')
 % save('C:\Users\jdlui\Documents\IR Optical Band\test.mat',stepSize)
 
+% Saving 53M cloud results
+save('pointCloud53M.mat','rotation','elbowPos','wristPos','angles','-v7.3')
+
 %% Plot the point cloud
 % clc
 % clear all

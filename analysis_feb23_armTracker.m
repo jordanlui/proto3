@@ -20,10 +20,10 @@ T = 1/freq;
 T7W = 0;
 % T7W = [0 0 1; 1 0 0; 0 1 0]; % Attempt 2, Jordan attempt
 % T7W = [1 0 0; 0 0 -1; 0 1 0]; % From Ahmed March 5th
-T7W = [1 0 0; 0 0 1;0 -1 0]; % Inverse of Ahmed matrix
+% T7W = [1 0 0; 0 0 1;0 -1 0]; % Inverse of Ahmed matrix
 % T7W = [0 -1 0; 1 0 0; 0 0 1]; % Arbitrary transform that works, Mar 11. Transform Wrist ART to W7 frame
 % T7W = [0 0 1; 1 0 0; 0 -1 0]; % By inspection, it seems we should make flip sign on x,y. Doesn't work
-
+T0G = [0 0 1; 0 -1 0; 1 0 0]; % Transform from Global frame (ART) to {0}
 % T7P = [1 0 0; 0 0 -1; 0 1 0]; % Transform from wrist proto IMU to frame 7
 
 accScale = 8192; % Conversion parameter for accelerometer to g value
@@ -206,6 +206,7 @@ linkaxes([ax1,ax2,ax3,ax4],'x')
 %% Use rotation matrix look up
 ind = 350;
 indend = 3070;
+badLength = [];
 % Create a search object s
 for i=1:(indend-ind)
     % Get wrist, shoulder orientation
@@ -225,12 +226,19 @@ for i=1:(indend-ind)
     % Look for the closest matching wrist orientation
     % Add a weighted or average approach here
     guess.ind = find(rotDiff <= tolRotation);  
+    
     if length(guess.ind) > 1
         guess.elbowPos{i} = mean(elbowMat(guess.ind,:))';
         guess.wristPos{i} = mean(wristMat(guess.ind,:))';
+    elseif isempty(guess.ind) == 1
+        badLength = [badLength i];
+        guess.ind = find(rotDiff == lowestDiff,1);
+        guess.wristPos{i} = wristMat(guess.ind,:)';
+        guess.elbowPos{i} = elbowMat(guess.ind,:)'; 
     else
         guess.wristPos{i} = wristMat(guess.ind,:)';
         guess.elbowPos{i} = elbowMat(guess.ind,:)'; 
+    
     end
     % Single optimum approach
 %     guess.ind = find(rotDiff == lowestDiff,1);
@@ -246,6 +254,13 @@ for i=1:(indend-ind)
 end
 
 %% Plot out result
+% badLength = [];
+% for i =1:length(guess.wristPos)
+%     if length(guess.wristPos{i}) ~=3
+%         badLength = [badLength i];
+%     end
+% end
+
 guessedWrist = (cell2mat(guess.wristPos))';
 
 % Window smoothing was tried here, but ultimately distorts the output. HMM!

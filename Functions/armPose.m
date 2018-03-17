@@ -4,7 +4,10 @@ function [elbow, wrist] = armPose(dh,q)
     % Kinematic model for Lui 2018, left arm
     % Angles in q refer to Sh Extension, Sh Rotation, Sh Abduction, El
     % Extension, Wrist Deviation, Wr Flexion, Wr Pronation
-    
+    if nargin < 2
+        dhparams = load('LuiArm2018.mat');
+        dh = dhparams;
+    end
     
     dh(:,4) = dh(:,4) - q; % Modified angles
     
