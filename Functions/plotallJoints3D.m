@@ -5,7 +5,7 @@ function plotallJoints3D(joints,caption,jointLabel)
         labels = jointLabel;
     else
         pltTitle = '3D plot';
-        labels = ['wrist','forearm','arm','chest','shoulder1','shoulder2','elbow'];
+        labels = {'wrist','forearm','arm','chest','shoulder1','shoulder2','elbow'};
     end
     
     numJoints = length(joints);
