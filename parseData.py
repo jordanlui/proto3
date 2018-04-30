@@ -79,7 +79,7 @@ def parse(filePath): # Parse files
 				asixdcal = re.findall(regexFloat,line)[0]
 				sixdcal.append(int(asixdcal))	
 			elif dataType == dataLabels[3]: # 6d tracker data
-#				print '6d data instead of 6d inertial detected'
+#				print('6d data instead of 6d inertial detected')
 				pass
 			elif dataType == dataLabels[4]: # 6d inertial tracker data
 				if NumObjects == -1: # Check for the number of tracked objects if it isn't known yet
@@ -105,10 +105,10 @@ def parse(filePath): # Parse files
 			else: # This is likely a Omron IMU line
 				if len(line) > protoDataMinLength: # This is probably a prototype data line if length is sufficient
 					# Use RegEx to grab all elements					
-					deviceData = re.findall(queryDevice,line)
+					deviceData = re.findall(regexFloatInt,line)
 					# If length is sufficient, write into list. Cast to int
 					if len(deviceData) >= protoMinEl:
-						deviceData = [int(i) for i in deviceData]
+						deviceData = [float(i) for i in deviceData]
 						deviceDatas.append(deviceData)
 					else:
 						deviceDatas.append([0 for i in range(26)]) # Put an empty line in otherwise
@@ -148,11 +148,11 @@ def joinProtoART(positions,rotations,deviceDatas,time,handTracker,fileName):
 	else:
 	
 		if lengths[1:] == lengths[:-1]:
-			print 'All arrays are equal length'
+			print('All arrays are equal length')
 			lengthsEqual = True
 			newData = data
-	 	else:
-			print 'Arrays are not equal in length'
+		else:
+			print('Arrays are not equal in length')
 			minLength = min(lengths)
 			newData = []
 			for i in data:
@@ -162,7 +162,7 @@ def joinProtoART(positions,rotations,deviceDatas,time,handTracker,fileName):
 		if lengthsEqual:
 			dataArray = np.array(newData[0]).reshape((len(newData[0]),1))# Put the time row in first
 			for i in range(1,len(newData)):
-	#			print np.array(newData[i]).shape
+	#			print(np.array(newData[i]).shape)
 				dataArray = np.hstack((dataArray,np.array(newData[i])))
 					
 	np.savetxt(fileName+'.csv',dataArray, delimiter=',')
