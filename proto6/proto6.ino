@@ -57,25 +57,20 @@ void setup()
   delay(100);  // Short delay, wait for the Mate to send back CMD 
   myIMU.initMPU9250();
   myIMU.initAK8963(myIMU.magCalibration);
-
 }
 
 void loop()
 {
-  
   //Variable output setup
   int sendomron = 5; // every # iteration will send omron instead of IMU
   int outputcount = 0;
   
   // Time stamp
   unsigned int deltatime = 0;
- 
 
   while (1)
   {
       outputcount++;
-      
-  
       if(outputcount == sendomron)
       {
         readomron();   
@@ -205,22 +200,22 @@ void IMUdata()
     myIMU.getMres();
     // User environmental x-axis correction in milliGauss, should be
     // automatically calculatedde
-    myIMU.magbias[0] = +470.;
+    myIMU.magBias[0] = +470.;
     // User environmental x-axis correction in milliGauss TODO axis??
-    myIMU.magbias[1] = +120.;
+    myIMU.magBias[1] = +120.;
     // User environmental x-axis correction in milliGauss
-    myIMU.magbias[2] = +125.;
+    myIMU.magBias[2] = +125.;
 
     // Calculate the magnetometer values in milliGauss
     // Include factory calibration per data sheet and user environmental
     // corrections
     // Get actual magnetometer value, this depends on scale being set
     myIMU.mx = (float)myIMU.magCount[0] * myIMU.mRes * myIMU.magCalibration[0] -
-               myIMU.magbias[0];
+               myIMU.magBias[0];
     myIMU.my = (float)myIMU.magCount[1] * myIMU.mRes * myIMU.magCalibration[1] -
-               myIMU.magbias[1];
+               myIMU.magBias[1];
     myIMU.mz = (float)myIMU.magCount[2] * myIMU.mRes * myIMU.magCalibration[2] -
-               myIMU.magbias[2];
+               myIMU.magBias[2];
 
   myIMU.updateTime();
   MahonyQuaternionUpdate(myIMU.ax, myIMU.ay, myIMU.az, myIMU.gx * DEG_TO_RAD,

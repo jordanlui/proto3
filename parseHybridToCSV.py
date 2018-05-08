@@ -16,7 +16,7 @@ import glob
 
 #%% Grab files
 
-path = '../Data/apr29/obstructed/'
+path = '../Data/apr30/'
 files = glob.glob(path+'log*.txt')
 #files = glob.glob(path+'putty*.log')
 #files = glob.glob(path+'*.drf')

@@ -9,13 +9,19 @@ addpath('Functions');
 %% Lui built system
 % Load arm length and DH Parameters
 load('LuiArm2018.mat') 
+% Update DH params 
+Ll = 247;
+Lu = 320;
+dhparams(4,2) = Lu;
+dhparams(5,2) = Ll;
+save('LuiArm2018.mat') 
 dh.orig = dhparams;
 
 %% Point cloud generation
 angleRangeShen = [-60,180;-40,120;-30,120;0,150;0,180]; % Angle range form Shen 2016. [ShFlx, ShAbd, ShRot, ElbFlx, ElbPro]
 angleRangeRosen = [-10,62;-14,134;-72,55;41,163;-125,135]; % ROM in Rosen 2005 ADL [ShFlx, ShAbd, ShRot, ElbFlx, ElbPro]
 angleRangeKlopcar = [-60,170; -10,170; -60,90 ; -90,60 ; 0,180]; % [ShFlx, ShAbd, ShRot, ElbFlx, ElbPro]
-stepSize = 10;
+stepSize = 15;
 printoutStep = 2e4;
 
 [rotation,elbowPos,wristPos,angles] = calcPointCloud(angleRangeShen,stepSize);
@@ -23,8 +29,8 @@ printoutStep = 2e4;
 disp('Final length')
 length(rotation)
 
-save('pointClouds\pointCloudShen_step10.mat','rotation','elbowPos','wristPos','angles')
-% save('pointClouds\pointCloudKlopcar_step10.mat','rotation','elbowPos','wristPos','angles')
+save('pointClouds\cloud_Lui_S15.mat','rotation','elbowPos','wristPos','angles')
+% save('pointClouds\cloud_Lui_K10.mat','rotation','elbowPos','wristPos','angles')
 
 
 %% Plot the point cloud

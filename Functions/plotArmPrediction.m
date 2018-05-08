@@ -33,7 +33,7 @@ function plotArmPrediction(guessed,real,error)
     % ylabel('Distance (mm)')
     % hold off
     title('Wrist Error')
-    legend('error','Prediction','real')
+%     legend('error','Prediction','real')
 
     subplot(2,2,4)
     plot(error.elbow,'r.','LineStyle','none'), ylabel('Error (mm)')
@@ -43,6 +43,6 @@ function plotArmPrediction(guessed,real,error)
     % scatter(1:length(real.elbow),realElbowDist,3,'b')
     % hold off
     title('Elbow Error')
-    legend('error','Prediction','real')
+%     legend('error','Prediction','real')
 
 end

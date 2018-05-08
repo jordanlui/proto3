@@ -14,6 +14,12 @@ unsigned int gyrodata[3];
 float quat[4];
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};            // vector to hold quaternion
 unsigned int quatshift[4];
+//float gyrCal[3] = {-0.0528,-0.4386,-0.0558}; // Calibration for the MPU9250 (proto6-2), measured May 3 in a 1 hour recording.
+float gyrCal[3] = {-0.8, 1.6, -0.1}; // Calibration for the MPU9250 (proto6-2). May 7 mode values
+float thresholdGyro = 10; // Gyro Sum Square treshold value. If sum square of Gyro is less than this, device considered stationary
+
+#define calibrateGyro true  // Set this flag true to shift gyro values based on specific calibration
+#define useIMUThresholding true // Set true to use thresholding on IMU Update
 
 // Byte setup
 unsigned char temphighbyte[16];
@@ -285,6 +291,14 @@ void loop()
     gy = (float)gyroCount[1]*gRes;  
     gz = (float)gyroCount[2]*gRes;   
 
+    // Shift gyro values to reduce gyro drift
+    if (calibrateGyro)
+    {
+    gx -= gyrCal[0];
+    gy -= gyrCal[1];
+    gz -= gyrCal[2];
+    }
+
     tempCount = readTempData();  // Read the x/y/z adc values
     temperature = ((float) tempCount) / 340. + 36.53; // Temperature in degrees Centigrade
    }  
@@ -296,9 +310,16 @@ void loop()
 //      beta = 0.041; // decrease filter gain after stabilized
 //      zeta = 0.015; // increase gyro bias drift gain after stabilized
 //    }
+   //
    // Pass gyro rate as rad/s
+   if (useIMUThresholding){
+     if (gx*gx + gy*gy + gz*gz > thresholdGyro){
+      MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f); // Inputs are in G and in rad/s
+     }
+   }
+   else {
     MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f); // Inputs are in G and in rad/s
-
+   }
     
 
     // Serial print and/or display at 0.5 s rate independent of data rates

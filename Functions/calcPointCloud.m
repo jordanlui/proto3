@@ -24,11 +24,11 @@ for i=ROM(1,1):stepSize:ROM(1,2)
         for k = ROM(3,1):stepSize:ROM(3,2)
             for l = ROM(4,1):stepSize:ROM(4,2)
                 for m = ROM(5,1):stepSize:ROM(5,2)
-                    [elbow, wrist] = armPose(dhparams,[i,k,j,l,0,0,m]');
+                    [pose] = armPose(dhparams,[i,k,j,l,0,0,m]');
                     angles(cnt,:) = [i j k l m];
-                    rotation(cnt,:) = reshape(wrist.R,[1,9]);
-                    elbowPos(cnt,:) = elbow.pos;
-                    wristPos(cnt,:) = wrist.pos;
+                    rotation(cnt,:) = reshape(pose.wrist.R,[1,9]);
+                    elbowPos(cnt,:) = pose.elbow.pos;
+                    wristPos(cnt,:) = pose.wrist.pos;
                     cnt = cnt + 1;
                     if mod(cnt,printoutStep)==0
                         cnt
